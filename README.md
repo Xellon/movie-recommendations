@@ -1,0 +1,1 @@
+Project for the final bachelor thesis
