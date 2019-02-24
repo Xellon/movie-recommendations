@@ -1,14 +1,15 @@
 ﻿using System.Linq;
 using Microsoft.AspNetCore.Mvc;
+using Recommendation.Database;
 
 namespace Recommendation.Client.Controllers
 {
     [Route("api/[controller]")]
     public class AuthenticationController : ControllerBase
     {
-        private Database.DatabaseContext _context;
+        private DatabaseContext _context;
 
-        public AuthenticationController(Database.DatabaseContext context)
+        public AuthenticationController(DatabaseContext context)
         {
             _context = context;
         }
