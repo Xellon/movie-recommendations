@@ -1,0 +1,30 @@
+.requestmovie-chip.requestmovie-chip{
+    margin: 5px;
+    background: transparent;
+
+    &.selected {
+        background: rgba(0, 0, 0, 0.3);
+        &.requestmovie-chip:focus {
+            background: rgba(0, 0, 0, 0.3);
+        }
+    }
+
+    &.requestmovie-chip:focus {
+        background: transparent;
+    }  
+}
+
+.requestmovie-chipcontainer {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 500px;
+    margin: auto;
+}
+
+button.requestmovie-generatebutton {
+    margin: 50px auto;
+    display: block;
+    height: 60px;
+    width: 80%;
+}

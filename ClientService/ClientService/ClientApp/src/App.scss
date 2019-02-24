@@ -1,0 +1,21 @@
+html {
+    margin: 0px;
+    padding: 0px;
+}
+
+body {
+    margin: 0px;
+    padding: 0px;
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.content {
+    display: grid;
+    grid-template-columns: 200px auto;
+    flex: 1 0;
+}

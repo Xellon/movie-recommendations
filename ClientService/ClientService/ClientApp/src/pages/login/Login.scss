@@ -1,0 +1,27 @@
+$spacing-unit: 10px;
+
+main {
+    width: auto;
+    display: block; // Fix IE 11 issue.
+    margin-left: $spacing-unit * 3;
+    margin-right: $spacing-unit * 3;
+}
+
+.paper {
+    margin-top: $spacing-unit * 8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: $spacing-unit * 2 $spacing-unit * 3 $spacing-unit * 3;
+}
+
+.custom-form {
+    width: 100%; // Fix IE 11 issue.
+    margin-top: $spacing-unit;
+}
+
+.submit-button {
+    margin-top: $spacing-unit * 3;
+}
+
+  

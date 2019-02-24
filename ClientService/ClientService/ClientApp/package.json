@@ -1,0 +1,46 @@
+{
+  "name": "recommendation-client-service",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@material-ui/core": "^3.9.2",
+    "@material-ui/icons": "^3.0.2",
+    "@types/node": "~10.12.0",
+    "downshift": "^3.2.4",
+    "lodash": "^4.17.11",
+    "react": "^16.8.3",
+    "react-dom": "^16.8.3",
+    "react-router-dom": "^4.3.1",
+    "react-virtualized": "^9.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "^16.8.4",
+    "@types/react-dom": "^16.8.2",
+    "@types/react-router-dom": "^4.3.1",
+    "@types/lodash": "^4.14.121",
+    "@types/react-virtualized": "^9.18.12",
+    "awesome-typescript-loader": "^5.2.1",
+    "css-loader": "^2.1.0",
+    "html-webpack-plugin": "^3.2.0",
+    "node-sass": "^4.11.0",
+    "rimraf": "^2.6.3",
+    "sass-loader": "^7.1.0",
+    "source-map-loader": "^0.2.4",
+    "style-loader": "^0.23.1",
+    "tslint": "^5.12.1",
+    "tslint-react": "^3.6.0",
+    "typescript": "^3.3.0",
+    "uglifyjs-webpack-plugin": "^2.1.1",
+    "webpack": "^4.29.5",
+    "webpack-cli": "^3.2.3",
+    "webpack-dev-server": "^3.2.0",
+    "webpack-merge": "^4.2.1"
+  },
+  "scripts": {
+    "start": "webpack-dev-server --port 3000 --config webpack.dev.js",
+    "build": "rimraf ./build && webpack --config webpack.prod.js",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject",
+    "lint": "tslint src/**/*.ts*"
+  }
+}
