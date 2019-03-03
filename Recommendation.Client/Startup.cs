@@ -24,10 +24,13 @@ namespace Recommendation.Client
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-            services.AddDbContext<DatabaseContext>(options => options.UseSqlServer("Server=localhost,1433;Database=recommendations;UserID=application;Password=application;Trusted_Connection=True;"));
+            services.AddDbContext<DatabaseContext>(options => 
+            {
+                options.UseSqlServer(Configuration["DatabaseConnectionString"], b => b.MigrationsAssembly("Recommendation.Client"));
+            });
 
-            // In production, the React files will be served from this directory
-            services.AddSpaStaticFiles(configuration =>
+        // In production, the React files will be served from this directory
+        services.AddSpaStaticFiles(configuration =>
             {
                 configuration.RootPath = "ClientApp/build";
             });

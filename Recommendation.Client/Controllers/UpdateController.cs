@@ -47,14 +47,14 @@ namespace Recommendation.Client.Controllers
         {
             var discoveredMovies = await RequestDiscoveredMovies(1);
 
-            SaveMovies(discoveredMovies.Results);
+            await SaveMovies(discoveredMovies.Results);
 
             var totalPages = discoveredMovies.Total_Pages;
 
             for (int page = 2; page <= totalPages; page++)
             {
                 discoveredMovies = await RequestDiscoveredMovies(page);
-                SaveMovies(discoveredMovies.Results);
+                await SaveMovies(discoveredMovies.Results);
 
                 if (page % 40 == 0)
                     await Task.Delay(10000);
@@ -73,7 +73,7 @@ namespace Recommendation.Client.Controllers
             return await response.Content.ReadAsAsync<TMDB.DiscoveredMovies>();
         }
 
-        private async void SaveMovies(IEnumerable<TMDB.DiscoveredMovie> discoveredMovies)
+        private async Task SaveMovies(IEnumerable<TMDB.DiscoveredMovie> discoveredMovies)
         {
             foreach (var discoveredMovie in discoveredMovies)
             {

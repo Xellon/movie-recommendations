@@ -12,7 +12,7 @@ namespace Recommendation.Database
                 .HasKey(m => new { m.MovieId, m.UserId });
 
             modelBuilder.Entity<TagWhish>()
-                .HasKey(w => new { w.TagId, w.Recommendation });
+                .HasKey(w => new { w.TagId, w.RecommendationId });
 
             modelBuilder.Entity<MovieTag>()
                 .HasKey(t => new { t.TagId, t.MovieId });
