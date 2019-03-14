@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Recommendation.Database;
 
 namespace Recommendation.Service
 {
@@ -19,6 +21,9 @@ namespace Recommendation.Service
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHealthChecks();
+
+            services.AddDbContext<DatabaseContext>(options => options.UseSqlServer("Server=localhost,1433;Database=recommendations;UserID=application;Password=application;Trusted_Connection=True;"));
+            //services.AddScoped<RecommendationEngine, RecommendationEngine>();
 
             services
                 .AddMvc()

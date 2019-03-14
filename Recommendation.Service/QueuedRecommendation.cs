@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Recommendation.Service
@@ -6,13 +7,17 @@ namespace Recommendation.Service
     public class QueuedRecommendation
     {
         public int Id { get; private set; }
+        public int RecommendationId { get; private set; }
         public DateTime StartTime { get; private set; }
-        private Task RecommendationTask { get; set; }
+        public DateTime StopTime { get; private set; }
+        public Database.RecommendationStatus Status { get; private set; }
 
-        public QueuedRecommendation(int id, Task task)
+        private Task<int> RecommendationTask { get; set; }
+
+        public QueuedRecommendation(int id, Task<int> recommendationTask)
         {
             Id = id;
-            RecommendationTask = task;
+            RecommendationTask = recommendationTask;
 
             StartTime = DateTime.Now;
 
@@ -22,6 +27,11 @@ namespace Recommendation.Service
         public TaskStatus RecommendationStatus()
         {
             return RecommendationTask.Status;
+        }
+
+        public void Stop()
+        {
+            throw new NotImplementedException();
         }
     }
 }
