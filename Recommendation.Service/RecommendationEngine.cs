@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Recommendation.Service
 {
-    public class RecommendationEngine
+    public class RecommendationEngine : IRecommendationEngine
     {
         private readonly Database.DatabaseContext _databaseContext;
 

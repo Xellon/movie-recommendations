@@ -7,11 +7,16 @@ namespace Recommendation.Service
     {
         private int _lastId = 0;
         private readonly List<QueuedRecommendation> _recommendations = new List<QueuedRecommendation>();
-        private readonly RecommendationEngine _recommendationEngine;
+        private readonly IRecommendationEngine _recommendationEngine;
 
         public RecommendationQueue(Database.DatabaseContext databaseContext)
         {
             _recommendationEngine = new RecommendationEngine(databaseContext);
+        }
+
+        public RecommendationQueue(IRecommendationEngine recommendationEngine)
+        {
+            _recommendationEngine = recommendationEngine;
         }
 
         private int GenerateNewId() => ++_lastId;
