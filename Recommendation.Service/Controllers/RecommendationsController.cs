@@ -29,9 +29,9 @@ namespace Recommendation.Service.Controllers
             if (!userId.HasValue || requestedTagIds is null)
                 return BadRequest();
 
-            _queue.QueueRecommendation(userId.Value, requestedTagIds);
+            var queuedRecommendationId = _queue.QueueRecommendation(userId.Value, requestedTagIds);
 
-            return Ok();
+            return queuedRecommendationId;
         }
 
         [HttpPost]
@@ -45,13 +45,15 @@ namespace Recommendation.Service.Controllers
         [HttpGet]
         public ActionResult<Database.RecommendationStatus> Status(int queuedRecommendationId)
         {
-            return _queue.GetRecommendationStatus(queuedRecommendationId);
+            var status = _queue.GetRecommendationStatus(queuedRecommendationId);
+            return status;
         }
 
         [HttpGet]
         public ActionResult<int> RecommendationId(int queuedRecommendationId)
         {
-            return _queue.GetRecommendationId(queuedRecommendationId);
+            var recommendationId = _queue.GetRecommendationId(queuedRecommendationId);
+            return recommendationId;
         }
     }
 }
