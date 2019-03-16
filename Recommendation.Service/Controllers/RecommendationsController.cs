@@ -8,15 +8,21 @@ namespace Recommendation.Service.Controllers
     public class RecommendationsController : ControllerBase
     {
         private readonly IRecommendationQueue _queue;
+        private readonly IQueuedRecommendationStorage _storage;
+        private readonly IQueueHandler _handler;
 
         public RecommendationsController(Database.DatabaseContext databaseContext)
         {
-            _queue = new RecommendationQueue(databaseContext);
+            _storage = new QueuedRecommendationStorage();
+            _queue = new RecommendationQueue(_storage);
+            _handler = new QueueHandler(databaseContext, _queue, _storage);
         }
 
-        public RecommendationsController(IRecommendationQueue queue)
+        public RecommendationsController(IQueuedRecommendationStorage storage, IRecommendationQueue queue, IQueueHandler handler)
         {
+            _storage = storage;
             _queue = queue;
+            _handler = handler;
         }
 
         [HttpPost]
@@ -37,7 +43,7 @@ namespace Recommendation.Service.Controllers
         [HttpPost]
         public ActionResult StopRecommendation(int queuedRecommendationId)
         {
-            _queue.StopRecommendation(queuedRecommendationId);
+            _handler.StopRecommendation(queuedRecommendationId);
 
             return Ok();
         }
@@ -45,14 +51,14 @@ namespace Recommendation.Service.Controllers
         [HttpGet]
         public ActionResult<Database.RecommendationStatus> Status(int queuedRecommendationId)
         {
-            var status = _queue.GetRecommendationStatus(queuedRecommendationId);
+            var status = _storage.GetRecommendationStatus(queuedRecommendationId);
             return status;
         }
 
         [HttpGet]
         public ActionResult<int> RecommendationId(int queuedRecommendationId)
         {
-            var recommendationId = _queue.GetRecommendationId(queuedRecommendationId);
+            var recommendationId = _storage.GetRecommendationId(queuedRecommendationId);
             return recommendationId;
         }
     }

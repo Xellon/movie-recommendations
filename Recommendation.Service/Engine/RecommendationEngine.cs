@@ -15,17 +15,17 @@ namespace Recommendation.Service
             _databaseContext = databaseContext;
         }
 
-        public async Task<int> FindOutStuff(int userId, List<int> requestedTagIds)
+        public async Task<int> FindOutStuff(RecommendationParameters parameters)
         {
             var movies = await _databaseContext.Movies
-                .Where(m => requestedTagIds.Contains(m.Id))
+                .Where(m => parameters.RequestedTagIds.Contains(m.Id))
                 .OrderByDescending(m => m.AverageRating)
                 .Take(10)
                 .ToListAsync();
 
             var recommendation = new Database.Recommendation()
             {
-                UserId = userId,
+                UserId = parameters.UserId,
             };
 
             _databaseContext.Recommendations.Add(recommendation);

@@ -1,0 +1,85 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Recommendation.Service
+{
+    public interface IQueuedRecommendationStorage
+    {
+        int Add(RecommendationParameters parameters);
+        bool Remove(int queuedRecommendationId);
+        void SetRecommendationStatus(int queuedRecommendationId, Database.RecommendationStatus newStatus);
+        Database.RecommendationStatus GetRecommendationStatus(int queuedRecommendationId);
+        QueuedRecommendation GetOldestUnstartedRecommendation();
+        void SetRecommendationId(int queuedRecommendationId, int recommendationId);
+        int GetRecommendationId(int queuedRecommendationId);
+    }
+
+    public class QueuedRecommendationStorage : IQueuedRecommendationStorage
+    {
+        private int _lastRecommendationId = 0;
+        private List<QueuedRecommendation> _recommendations = new List<QueuedRecommendation>();
+
+        private int GetNewRecommendationId() => ++_lastRecommendationId;
+
+        private QueuedRecommendation Get(int queuedRecommendationId)
+        {
+            return _recommendations.FirstOrDefault(r => r.Id == queuedRecommendationId);
+        }
+
+        public int Add(RecommendationParameters parameters)
+        {
+            var recommendation = new QueuedRecommendation
+            {
+                Id = GetNewRecommendationId(),
+                RecommendationParameters = parameters,
+                Status = Database.RecommendationStatus.Queued,
+                StartTime = DateTime.Now
+            };
+
+            _recommendations.Add(recommendation);
+
+            return recommendation.Id;
+        }
+
+        public bool Remove(int queuedRecommendationId)
+        {
+            return _recommendations.Remove(Get(queuedRecommendationId));
+        }
+
+        /// <summary>
+        /// Sets recommendation status and sets stop time to current time
+        /// </summary>
+        public void SetRecommendationStatus(int queuedRecommendationId, Database.RecommendationStatus newStatus)
+        {
+            var recommendation = Get(queuedRecommendationId);
+
+            if (recommendation is null)
+                return;
+
+            recommendation.Status = newStatus;
+            recommendation.StopTime = DateTime.Now;
+        }
+
+        public Database.RecommendationStatus GetRecommendationStatus(int queuedRecommendationId)
+        {
+            return Get(queuedRecommendationId).Status;
+        }
+
+        public QueuedRecommendation GetOldestUnstartedRecommendation()
+        {
+            return _recommendations.OrderByDescending(r => r.StartTime)
+                .FirstOrDefault(r => r.Status == Database.RecommendationStatus.Queued);
+        }
+
+        public void SetRecommendationId(int queuedRecommendationId, int recommendationId)
+        {
+            Get(queuedRecommendationId).RecommendationId = recommendationId;
+        }
+
+        public int GetRecommendationId(int queuedRecommendationId)
+        {
+            return Get(queuedRecommendationId).RecommendationId;
+        }
+    }
+}

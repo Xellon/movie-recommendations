@@ -23,7 +23,6 @@ namespace Recommendation.Service
             services.AddHealthChecks();
 
             services.AddDbContext<DatabaseContext>(options => options.UseSqlServer("Server=localhost,1433;Database=recommendations;UserID=application;Password=application;Trusted_Connection=True;"));
-            //services.AddScoped<RecommendationEngine, RecommendationEngine>();
 
             services
                 .AddMvc()

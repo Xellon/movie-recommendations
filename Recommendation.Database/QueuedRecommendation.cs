@@ -15,14 +15,14 @@ namespace Recommendation.Database
 
     public class QueuedRecommendation
     {
-        public int Id;
+        public int Id { get; set; }
 
-        public RecommendationStatus Status;
+        public RecommendationStatus Status { get; set; }
 
-        public DateTime StartTime;
-        public DateTime StopTime;
+        public DateTime StartTime { get; set; }
+        public DateTime StopTime { get; set; }
 
-        public int RecommendationId;
-        public Recommendation Recommendation;
+        public int RecommendationId { get; set; }
+        public Recommendation Recommendation { get; set; }
     }
 }

@@ -5,6 +5,6 @@ namespace Recommendation.Service
 {
     public interface IRecommendationEngine
     {
-        Task<int> FindOutStuff(int userId, List<int> requestedTagIds);
+        Task<int> FindOutStuff(RecommendationParameters parameters);
     }
 }

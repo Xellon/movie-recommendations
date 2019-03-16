@@ -8,14 +8,29 @@ namespace Recommendation.Service.Controllers.Tests
     [TestClass]
     public class RecommendationsController
     {
+        private Mock<IQueuedRecommendationStorage> _storageMock;
+        private Mock<IRecommendationQueue> _queueMock;
+        private Mock<IQueueHandler> _handlerMock;
+        private Controllers.RecommendationsController _controller;
+
+        [TestInitialize]
+        public void BeforeEach()
+        {
+            _storageMock = new Mock<IQueuedRecommendationStorage>();
+            _queueMock = new Mock<IRecommendationQueue>();
+            _handlerMock = new Mock<IQueueHandler>();
+
+            _controller = new Controllers.RecommendationsController(
+                _storageMock.Object, 
+                _queueMock.Object,
+                _handlerMock.Object);
+        }
+
         #region QueueRecommendation
         [TestMethod]
         public void QueueRecommendation_EmptyParameters_ReturnsBadRequestResult()
         {
-            var queueMock = new Mock<IRecommendationQueue>();
-            var controller = new Controllers.RecommendationsController(queueMock.Object);
-
-            var response = controller.QueueRecommendation(null, null);
+            var response = _controller.QueueRecommendation(null, null);
 
             Assert.IsInstanceOfType(response.Result, typeof(BadRequestResult));
         }
@@ -24,58 +39,52 @@ namespace Recommendation.Service.Controllers.Tests
         public void QueueRecommendation_NonEmptyParameters_ReturnsQueuedRecommendationId()
         {
             var expectedQueuedRecommendationId = 39;
-            var queueMock = new Mock<IRecommendationQueue>();
-            queueMock.Setup(q => q.QueueRecommendation(It.IsAny<int>(), It.IsAny<List<int>>())).Returns(expectedQueuedRecommendationId);
-            var controller = new Controllers.RecommendationsController(queueMock.Object);
+            _queueMock.Setup(q => q.QueueRecommendation(It.IsAny<int>(), It.IsAny<List<int>>())).Returns(expectedQueuedRecommendationId);
 
-            var response = controller.QueueRecommendation(42, new List<int>());
+            var response = _controller.QueueRecommendation(42, new List<int>());
 
             Assert.AreEqual(expectedQueuedRecommendationId, response.Value);
 
-            queueMock.Verify(q => q.QueueRecommendation(It.IsAny<int>(), It.IsAny<List<int>>()), Times.Once);
+            _queueMock.Verify(q => q.QueueRecommendation(It.IsAny<int>(), It.IsAny<List<int>>()), Times.Once);
         }
         #endregion
 
         [TestMethod]
         public void StopRecommendation_ValidRecommendationIdProvided_ReturnsOkResult()
         {
-            var queueMock = new Mock<IRecommendationQueue>();
-            var controller = new Controllers.RecommendationsController(queueMock.Object);
-
-            var response = controller.StopRecommendation(1);
+            var response = _controller.StopRecommendation(1);
 
             Assert.IsInstanceOfType(response, typeof(OkResult));
 
-            queueMock.Verify(q => q.StopRecommendation(It.IsAny<int>()), Times.Once);
+            _handlerMock.Verify(h => h.StopRecommendation(It.IsAny<int>()), Times.Once);
         }
 
         [TestMethod]
         public void Status_ValidQueuedRecommendationIdProvided_ReturnsRecommendationStatus()
         {
-            var queueMock = new Mock<IRecommendationQueue>();
-            queueMock.Setup(q => q.GetRecommendationStatus(It.IsAny<int>())).Returns(Database.RecommendationStatus.Finished);
-            var controller = new Controllers.RecommendationsController(queueMock.Object);
+            _storageMock.Setup(s => s.GetRecommendationStatus(It.IsAny<int>()))
+                .Returns(Database.RecommendationStatus.Finished);
 
-            var response = controller.Status(1);
+            var response = _controller.Status(1);
 
             Assert.AreEqual(Database.RecommendationStatus.Finished, response.Value);
 
-            queueMock.Verify(q => q.GetRecommendationStatus(It.IsAny<int>()), Times.Once);
+            _storageMock.Verify(s => s.GetRecommendationStatus(It.IsAny<int>()), Times.Once);
         }
 
         [TestMethod]
         public void RecommendationId_ValidQueuedRecommendationIdProvided_ReturnsRecommendationId()
         {
             var expectedRecommendationId = 39;
-            var queueMock = new Mock<IRecommendationQueue>();
-            queueMock.Setup(q => q.GetRecommendationId(It.IsAny<int>())).Returns(expectedRecommendationId);
-            var controller = new Controllers.RecommendationsController(queueMock.Object);
 
-            var response = controller.RecommendationId(1);
+            _storageMock.Setup(s => s.GetRecommendationId(It.IsAny<int>()))
+                .Returns(expectedRecommendationId);
+
+            var response = _controller.RecommendationId(1);
 
             Assert.AreEqual(expectedRecommendationId, response.Value);
 
-            queueMock.Verify(q => q.GetRecommendationId(It.IsAny<int>()), Times.Once);
+            _storageMock.Verify(s => s.GetRecommendationId(It.IsAny<int>()), Times.Once);
         }
     }
 }
