@@ -8,7 +8,7 @@ namespace Recommendation.Client.Controllers
     public partial class DataController : ControllerBase
     {
         [HttpGet("recommendedmovies")]
-        public IEnumerable<RecommendedMovie> RecommendedMovies(int userId)
+        public IEnumerable<RecommendedMovie> RecommendedMovies(string userId)
         {
             return _context.Recommendations.Where(r => r.UserId == userId)
                 .Join(_context.RecommendedMovies,
@@ -18,7 +18,7 @@ namespace Recommendation.Client.Controllers
         }
 
         [HttpGet("recommendedmovies/{id}")]
-        public IEnumerable<RecommendedMovie> RecommendedMovies([FromRoute]int id, int userId)
+        public IEnumerable<RecommendedMovie> RecommendedMovies([FromRoute]int id, string userId)
         {
             return _context.Recommendations.Where(r => r.UserId == userId && r.Id == id)
                 .Join(_context.RecommendedMovies,
@@ -28,7 +28,7 @@ namespace Recommendation.Client.Controllers
         }
 
         [HttpGet("recommendedmovies/latest")]
-        public IEnumerable<RecommendedMovie> LatestRecommendedMovies(int userId)
+        public IEnumerable<RecommendedMovie> LatestRecommendedMovies(string userId)
         {
             // TODO: change max id to max date
             var recommendations = _context.Recommendations.Where(r => r.UserId == userId);
@@ -40,7 +40,7 @@ namespace Recommendation.Client.Controllers
         }
 
         [HttpPost("[action]")]
-        public IActionResult GenerateRecommendations([FromBody]IEnumerable<int> tagIds, int userId)
+        public IActionResult GenerateRecommendations([FromBody]IEnumerable<int> tagIds, string userId)
         {
             var recommendedMovies = (
                 from movies in _context.Movies

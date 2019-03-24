@@ -67,7 +67,7 @@ export class UserNavigation extends React.Component<Props, State> {
   }
 
   public async componentDidMount() {
-    const user = Authentication.getSignedInUser();
+    const user = Authentication.getLoggedInUser();
 
     const response = await Utils.fetchBackend(`/api/data/user/isMember?userId=${user.id}`);
 

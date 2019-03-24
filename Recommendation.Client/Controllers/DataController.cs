@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Recommendation.Database;
 
 namespace Recommendation.Client.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     public partial class DataController : ControllerBase
     {

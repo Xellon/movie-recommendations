@@ -45,7 +45,7 @@ export class Register extends React.Component<RouteComponentProps, State> {
 
     if (this._submitEvent.notify(this, undefined)) {
       const response = await Utils.fetchBackend(
-        "/api/signup",
+        "/api/account/register",
         {
           method: "POST",
           headers: {

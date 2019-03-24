@@ -5,7 +5,7 @@ export enum UserType {
 }
 
 export interface SignedInUser {
-  id: number;
+  id: string;
   email: string;
   userType: UserType;
 }
@@ -42,7 +42,7 @@ export enum ReceiptType {
 
 export interface Receipt {
   id: number;
-  userId: number;
+  userId: string;
   membershipId?: number;
   recommendationId?: number;
   receiptDate: string;
@@ -64,7 +64,7 @@ export interface RecommendedMovie {
 }
 
 export interface UserMovie {
-  userId: number;
+  userId: string;
   movieId: number;
   rating: number;
 }

@@ -28,7 +28,7 @@ export class Login extends React.Component<RouteComponentProps, State> {
   public _onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const user = await Authentication.signIn(this.state.email, this.state.password);
+    const user = await Authentication.logIn(this.state.email, this.state.password);
 
     if (!user) {
       this.setState({ error: "Wrong email or password", password: "" });

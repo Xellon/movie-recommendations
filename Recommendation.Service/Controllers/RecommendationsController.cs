@@ -26,16 +26,16 @@ namespace Recommendation.Service.Controllers
         }
 
         [HttpPost]
-        public ActionResult<int> QueueRecommendation(int? userId, [FromBody]List<int> requestedTagIds)
+        public ActionResult<int> QueueRecommendation(string userId, [FromBody]List<int> requestedTagIds)
         {
             //// If something bad with services
             //return StatusCode(500);
 
             // If request params are wrong
-            if (!userId.HasValue || requestedTagIds is null)
+            if (userId is null || requestedTagIds is null)
                 return BadRequest();
 
-            var queuedRecommendationId = _queue.QueueRecommendation(userId.Value, requestedTagIds);
+            var queuedRecommendationId = _queue.QueueRecommendation(userId, requestedTagIds);
 
             return queuedRecommendationId;
         }

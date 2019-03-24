@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using System;
 using System.Collections.Generic;
 
 namespace Recommendation.Service.Controllers.Tests
@@ -39,13 +40,13 @@ namespace Recommendation.Service.Controllers.Tests
         public void QueueRecommendation_NonEmptyParameters_ReturnsQueuedRecommendationId()
         {
             var expectedQueuedRecommendationId = 39;
-            _queueMock.Setup(q => q.QueueRecommendation(It.IsAny<int>(), It.IsAny<List<int>>())).Returns(expectedQueuedRecommendationId);
+            _queueMock.Setup(q => q.QueueRecommendation(It.IsAny<string>(), It.IsAny<List<int>>())).Returns(expectedQueuedRecommendationId);
 
-            var response = _controller.QueueRecommendation(42, new List<int>());
+            var response = _controller.QueueRecommendation(Guid.NewGuid().ToString(), new List<int>());
 
             Assert.AreEqual(expectedQueuedRecommendationId, response.Value);
 
-            _queueMock.Verify(q => q.QueueRecommendation(It.IsAny<int>(), It.IsAny<List<int>>()), Times.Once);
+            _queueMock.Verify(q => q.QueueRecommendation(It.IsAny<string>(), It.IsAny<List<int>>()), Times.Once);
         }
         #endregion
 

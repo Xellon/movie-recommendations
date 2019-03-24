@@ -41,7 +41,7 @@ export class RequestMovie extends React.Component<{}, State> {
   }
 
   private _onClickGenerateRecommendations = async () => {
-    const user = Authentication.getSignedInUser();
+    const user = Authentication.getLoggedInUser();
     if (!user)
       return;
 

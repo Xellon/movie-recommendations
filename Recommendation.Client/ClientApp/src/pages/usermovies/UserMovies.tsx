@@ -32,7 +32,7 @@ export class UserMovies extends React.PureComponent<{}, State> {
   }
 
   private async requestDeletion(movies: Model.UserMovie[]) {
-    const user = Authentication.getSignedInUser();
+    const user = Authentication.getLoggedInUser();
 
     await Utils.fetchBackend(`/api/data/user/movies?userId=${user.id}`, {
       method: "DELETE",
@@ -51,7 +51,7 @@ export class UserMovies extends React.PureComponent<{}, State> {
   }
 
   private async requestAddition(movies: Model.UserMovie[]) {
-    const user = Authentication.getSignedInUser();
+    const user = Authentication.getLoggedInUser();
 
     await Utils.fetchBackend(`/api/data/user/movies?userId=${user.id}`, {
       method: "POST",
@@ -86,7 +86,7 @@ export class UserMovies extends React.PureComponent<{}, State> {
   }
 
   public async componentDidMount() {
-    const user = Authentication.getSignedInUser();
+    const user = Authentication.getLoggedInUser();
 
     const response = await Utils.fetchBackend(`/api/data/user/movies?userId=${user.id}`);
 

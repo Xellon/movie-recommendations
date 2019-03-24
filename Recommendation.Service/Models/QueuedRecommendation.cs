@@ -6,7 +6,7 @@ namespace Recommendation.Service
 {
     public class RecommendationParameters
     {
-        public int UserId { get; set; }
+        public string UserId { get; set; }
         public List<int> RequestedTagIds { get; set; }
     }
 

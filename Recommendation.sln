@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Recommendation.Service", "R
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Recommendation.Database", "Recommendation.Database\Recommendation.Database.csproj", "{D72C232B-0871-454B-B858-119775B83FEE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Recommendation.Service.Tests", "Recommendation.Service.Tests\Recommendation.Service.Tests.csproj", "{9790926D-62C0-4F7C-9420-8E46C7C87E2A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Recommendation.Service.Tests", "Recommendation.Service.Tests\Recommendation.Service.Tests.csproj", "{9790926D-62C0-4F7C-9420-8E46C7C87E2A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -5,7 +5,7 @@ namespace Recommendation.Service
 {
     public interface IRecommendationQueue
     {
-        int QueueRecommendation(int userId, List<int> requestedTagIds);
+        int QueueRecommendation(string userId, List<int> requestedTagIds);
         QueuedRecommendation GetUnstartedRecommendation();
     }
 
@@ -18,7 +18,7 @@ namespace Recommendation.Service
             _storage = storage;
         }
 
-        public int QueueRecommendation(int userId, List<int> requestedTagIds)
+        public int QueueRecommendation(string userId, List<int> requestedTagIds)
         {
             var recommendationId = _storage.Add(new RecommendationParameters
             {

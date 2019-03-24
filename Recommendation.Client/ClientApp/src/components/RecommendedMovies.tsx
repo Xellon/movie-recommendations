@@ -44,7 +44,7 @@ export class RecommendedMovies extends React.PureComponent<Props, State> {
   }
 
   private async getRecommendedMovies(recommendationId?: number): Promise<DB.RecommendedMovie[] | undefined> {
-    const user = Authentication.getSignedInUser();
+    const user = Authentication.getLoggedInUser();
 
     let response: Response;
 

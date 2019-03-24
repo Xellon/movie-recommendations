@@ -54,12 +54,12 @@ interface Props {
 export class HeaderBar extends React.Component<Props> {
 
   private onSignOut = () => {
-    Authentication.signOut();
+    Authentication.logOut();
     location.reload();
   }
 
   private getAppBarButtonsForUser() {
-    const user = Authentication.getSignedInUser();
+    const user = Authentication.getLoggedInUser();
 
     if (!user)
       return (

@@ -7,7 +7,7 @@ import "./Navigation.scss";
 
 export class Navigation extends React.Component {
   public render() {
-    const user = Authentication.getSignedInUser();
+    const user = Authentication.getLoggedInUser();
 
     return (
       <nav className="left-nav">

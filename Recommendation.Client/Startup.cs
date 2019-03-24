@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Recommendation.Client
 {
-    public class Startup
+    public partial class Startup
     {
         public Startup(IConfiguration configuration)
         {
@@ -29,8 +29,10 @@ namespace Recommendation.Client
                 options.UseSqlServer(Configuration["DatabaseConnectionString"], b => b.MigrationsAssembly("Recommendation.Client"));
             });
 
-        // In production, the React files will be served from this directory
-        services.AddSpaStaticFiles(configuration =>
+            ConfigureAuth(services);
+
+            // In production, the React files will be served from this directory
+            services.AddSpaStaticFiles(configuration =>
             {
                 configuration.RootPath = "ClientApp/build";
             });
@@ -56,6 +58,8 @@ namespace Recommendation.Client
                 app.UseStaticFiles();
                 app.UseSpaStaticFiles();
             }
+
+            app.UseAuthentication();
 
             app.UseMvc(routes =>
             {

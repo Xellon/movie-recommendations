@@ -53,7 +53,7 @@ export default class App extends React.Component<{}, State> {
   }
 
   private getRoutesForUser() {
-    const user = Authentication.getSignedInUser();
+    const user = Authentication.getLoggedInUser();
 
     let routes = SharedRoutes;
 

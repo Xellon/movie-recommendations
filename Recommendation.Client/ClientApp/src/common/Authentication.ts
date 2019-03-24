@@ -5,8 +5,16 @@ function saveUser(user: DB.SignedInUser) {
   localStorage.setItem("user", JSON.stringify(user));
 }
 
+function saveUserId(userId: string) {
+  localStorage.setItem("userId", userId);
+}
+
 function deleteUser() {
   localStorage.removeItem("user");
+}
+
+function deleteUserId() {
+  localStorage.removeItem("userId");
 }
 
 function getUser(): DB.SignedInUser | undefined {
@@ -18,11 +26,15 @@ function getUser(): DB.SignedInUser | undefined {
   return JSON.parse(userString);
 }
 
-async function signIn(email: string, password: string): Promise<DB.SignedInUser | undefined> {
+async function logIn(email: string, password: string): Promise<DB.SignedInUser | undefined> {
   const response = await Utils.fetchBackend(
-    "/api/authentication/signin", {
+    "/api/account/login", {
       method: "POST",
-      headers: { password, email },
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password, email }),
     },
   );
 
@@ -30,7 +42,9 @@ async function signIn(email: string, password: string): Promise<DB.SignedInUser 
     return undefined;
 
   try {
-    const user: DB.SignedInUser = await response.json();
+    const userId = await response.text();
+    saveUserId(userId);
+    const user: DB.SignedInUser = { id: userId, email, userType: DB.UserType.Client };
     saveUser(user);
     return user;
   } catch {
@@ -38,16 +52,24 @@ async function signIn(email: string, password: string): Promise<DB.SignedInUser 
   }
 }
 
-function getSignedInUser(): DB.SignedInUser | undefined {
+function getLoggedInUser(): DB.SignedInUser | undefined {
   return getUser();
 }
 
-function signOut() {
+function logOut() {
+  const user = getLoggedInUser();
+  Utils.fetchBackend(
+    `/api/account/logout?email${user.email}`, {
+      method: "POST",
+    },
+  );
+
   deleteUser();
+  deleteUserId();
 }
 
 export const Authentication = {
-  signIn,
-  signOut,
-  getSignedInUser,
+  logIn,
+  logOut,
+  getLoggedInUser,
 };

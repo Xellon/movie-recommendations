@@ -5,7 +5,11 @@ const backendUrl = "http://localhost:4000";
 
 function fetchBackend(path: string, options?: RequestInit) {
     const url = backendUrl + path;
-    return fetch(url, options);
+    const optionsWithCookies: RequestInit = {
+        credentials: "include",
+        ...options,
+    };
+    return fetch(url, optionsWithCookies);
 }
 
 function createOnNavigationClick(history: History, path: string) {

@@ -14,19 +14,19 @@ namespace Recommendation.Client.Controllers
         }
 
         [HttpGet("user")]
-        public User GetUser(int userId)
+        public User GetUser(string userId)
         {
-            return _context.Users.FirstOrDefault(u => u.Id == userId);
+            return _context.Users.FirstOrDefault(u => u.Id == userId.ToString());
         }
 
         [HttpGet("user/movies")]
-        public IEnumerable<UserMovie> GetUserMovies(int userId)
+        public IEnumerable<UserMovie> GetUserMovies(string userId)
         {
             return _context.UserMovies.Where(m => m.UserId == userId);
         }
 
         [HttpPost("user/movies")]
-        public IActionResult PostUserMovies([FromBody]IEnumerable<SignUpController.SentUserMovie> userMovies, int userId)
+        public IActionResult PostUserMovies([FromBody]IEnumerable<AccountController.FormUserMovie> userMovies, string userId)
         {
             foreach (var movie in userMovies)
             {
@@ -51,7 +51,7 @@ namespace Recommendation.Client.Controllers
         }
 
         [HttpDelete("user/movies")]
-        public IActionResult DeleteUserMovies([FromBody]IEnumerable<SignUpController.SentUserMovie> userMovies, int userId)
+        public IActionResult DeleteUserMovies([FromBody]IEnumerable<AccountController.FormUserMovie> userMovies, string userId)
         {
             foreach (var movie in userMovies)
             {

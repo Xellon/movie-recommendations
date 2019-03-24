@@ -29,7 +29,7 @@ export class Main extends React.PureComponent<RouteComponentProps> {
   constructor(props: RouteComponentProps) {
     super(props);
 
-    const user = Authentication.getSignedInUser();
+    const user = Authentication.getLoggedInUser();
     switch (user.userType) {
       case DB.UserType.Client:
         break;
