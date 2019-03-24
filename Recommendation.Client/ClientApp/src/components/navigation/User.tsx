@@ -21,9 +21,6 @@ export function createNavigationButton(text: string, path: string, style?: React
 
 const ChangeMoviesButton = createNavigationButton("Change movies", "/usermovies");
 const RequestRecommendationButton = createNavigationButton("Request a Recommendation", "/requestmovie");
-const ReceiptsButton = createNavigationButton("Receipts", "/receipts");
-const BecomeAMemberButton = createNavigationButton("Become a Member!", "/membership", { background: "gold" });
-const MembershipButton = createNavigationButton("Membership", "/membership");
 
 const MovieListButton = createNavigationButton("Movie List", "/movies");
 const UsersButton = createNavigationButton("Users", "/users");
@@ -46,21 +43,12 @@ export class UserNavigation extends React.Component<Props, State> {
           <>
             <ChangeMoviesButton />
             <RequestRecommendationButton />
-            <ReceiptsButton />
-            {this.state.isClientMember === undefined
-              ? <MembershipButton />
-              : (this.state.isClientMember ? <MembershipButton /> : <BecomeAMemberButton />)}
           </>);
       case DB.UserType.Admin:
         return (
           <>
             <MovieListButton />
             <UsersButton />
-          </>);
-      case DB.UserType.Finance:
-        return (
-          <>
-            <ReceiptsButton />
           </>);
     }
 

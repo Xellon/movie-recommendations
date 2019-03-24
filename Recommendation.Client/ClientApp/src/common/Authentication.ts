@@ -42,7 +42,7 @@ async function logIn(email: string, password: string): Promise<DB.SignedInUser |
     return undefined;
 
   try {
-    const userId = await response.text();
+    const userId = await response.json();
     saveUserId(userId);
     const user: DB.SignedInUser = { id: userId, email, userType: DB.UserType.Client };
     saveUser(user);

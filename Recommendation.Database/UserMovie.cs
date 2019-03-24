@@ -1,8 +1,11 @@
-﻿namespace Recommendation.Database
+﻿using Newtonsoft.Json;
+
+namespace Recommendation.Database
 {
     public class UserMovie
     {
         public string UserId { get; set; }
+        [JsonIgnore]
         public User User { get; set; }
 
         public int MovieId { get; set; }
