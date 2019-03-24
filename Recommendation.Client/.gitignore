@@ -1,4 +1,5 @@
 appsettings.json
+appsettings.Development.json
 Migrations
 
 ## Ignore Visual Studio temporary files, build results, and
