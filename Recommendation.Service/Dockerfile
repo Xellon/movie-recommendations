@@ -1,20 +1,20 @@
-FROM microsoft/dotnet:2.2.2-aspnetcore-runtime AS base
+FROM mcr.microsoft.com/dotnet/core/runtime:2.2 AS base
 WORKDIR /app
 EXPOSE 52521
 EXPOSE 44340
 
-FROM microsoft/dotnet:2.2.2-sdk AS build
+FROM mcr.microsoft.com/dotnet/core/sdk:2.2 AS build
 WORKDIR /src
-COPY ["RecommendationService/RecommendationService.csproj", "RecommendationService/"]
-RUN dotnet restore "RecommendationService/RecommendationService.csproj"
+COPY ["Recommendation.Service/Recommendation.Service.csproj", "Recommendation.Service/"]
+RUN dotnet restore "Recommendation.Service/Recommendation.Service.csproj"
 COPY . .
-WORKDIR "/src/RecommendationService"
-RUN dotnet build "RecommendationService.csproj" -c Release -o /app
+WORKDIR "/src/Recommendation.Service"
+RUN dotnet build "Recommendation.Service.csproj" -c Release -o /app
 
 FROM build AS publish
-RUN dotnet publish "RecommendationService.csproj" -c Release -o /app
+RUN dotnet publish "Recommendation.Service.csproj" -c Release -o /app
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
-ENTRYPOINT ["dotnet", "RecommendationService.dll"]
+ENTRYPOINT ["dotnet", "Recommendation.Service.dll"]
