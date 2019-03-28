@@ -1,0 +1,11 @@
+*
+
+!Recommendation.Database
+Recommendation.Database/bin
+Recommendation.Database/obj
+
+!Recommendation.Service
+
+Recommendation.Service/bin
+Recommendation.Service/obj
+Recommendation.Service/scripts

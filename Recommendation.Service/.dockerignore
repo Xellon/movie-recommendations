@@ -1,5 +1,0 @@
-.dockerignore
-Dockerfile
-bin
-obj
-docker-commands.*
