@@ -74,7 +74,7 @@ namespace Recommendation.Client
 
                 if (env.IsDevelopment())
                 {
-                    spa.UseProxyToSpaDevelopmentServer("http://localhost:3000");
+                    spa.UseProxyToSpaDevelopmentServer(Configuration["ClientDevServer"]);
                 }
             });
         }

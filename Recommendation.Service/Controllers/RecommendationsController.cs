@@ -11,18 +11,11 @@ namespace Recommendation.Service.Controllers
         private readonly IQueuedRecommendationStorage _storage;
         private readonly IQueueHandler _handler;
 
-        public RecommendationsController(Database.DatabaseContext databaseContext)
+        public RecommendationsController(Database.DatabaseContext databaseContext = null, IQueuedRecommendationStorage storage = null, IRecommendationQueue queue = null, IQueueHandler handler = null)
         {
-            _storage = new QueuedRecommendationStorage();
-            _queue = new RecommendationQueue(_storage);
-            _handler = new QueueHandler(databaseContext, _queue, _storage);
-        }
-
-        public RecommendationsController(IQueuedRecommendationStorage storage, IRecommendationQueue queue, IQueueHandler handler)
-        {
-            _storage = storage;
-            _queue = queue;
-            _handler = handler;
+            _storage = storage is null ? new QueuedRecommendationStorage() : storage;
+            _queue = queue is null ? new RecommendationQueue(_storage) : queue;
+            _handler = handler is null ? new QueueHandler(databaseContext, _queue, _storage) : handler;
         }
 
         [HttpPost("[action]")]

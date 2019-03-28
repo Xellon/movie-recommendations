@@ -1,0 +1,1 @@
+docker run --name recommendation-client -p 3000:3000 xellon/recommendation-client:latest

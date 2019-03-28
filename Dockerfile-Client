@@ -1,21 +1,30 @@
-FROM mcr.microsoft.com/dotnet/core/runtime:2.2 AS base
-WORKDIR /app
-EXPOSE 52521
-EXPOSE 44340
+FROM node:10.15 AS spa-build
+WORKDIR /src
+COPY Recommendation.Client/ClientApp/ .
+RUN npm install
+RUN npm run build
+
+FROM mcr.microsoft.com/dotnet/core/aspnet:2.2 AS base
+EXPOSE 3000
+# install node
 
 FROM mcr.microsoft.com/dotnet/core/sdk:2.2 AS build
 WORKDIR /src
-COPY ["Recommendation.Database/Recommendation.Database.csproj", "Recommendation.Database/"]
-COPY ["Recommendation.Service/Recommendation.Service.csproj", "Recommendation.Service/"]
-RUN dotnet restore "Recommendation.Service/Recommendation.Service.csproj"
+COPY Recommendation.Database/Recommendation.Database.csproj Recommendation.Database/
+RUN dotnet restore "Recommendation.Database/Recommendation.Database.csproj"
+COPY Recommendation.Client/Recommendation.Client.csproj Recommendation.Client/
+RUN dotnet restore "Recommendation.Client/Recommendation.Client.csproj"
 COPY . .
-WORKDIR "/src/Recommendation.Service"
-RUN dotnet build "Recommendation.Service.csproj" -c Release -o /app
+# RUN rm -rf Recommendation.Client/ClientApp
+# RUN mkdir Recommendation.Client/ClientApp
+WORKDIR /src/Recommendation.Client
+RUN dotnet build "Recommendation.Client.csproj" -c Release -o /app
 
 FROM build AS publish
-RUN dotnet publish "Recommendation.Service.csproj" -c Release -o /app
+RUN dotnet publish "Recommendation.Client.csproj" -c Release -o /app
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app .
-ENTRYPOINT ["dotnet", "Recommendation.Service.dll"]
+COPY --from=publish /app/ .
+COPY --from=spa-build /src/build/ /ClientApp/build/
+ENTRYPOINT ["dotnet", "Recommendation.Client.dll"]

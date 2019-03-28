@@ -2,6 +2,10 @@
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
+    "iis": {
+      "applicationUrl": "http://localhost/Recommendation.Client",
+      "sslPort": 0
+    },
     "iisExpress": {
       "applicationUrl": "http://localhost:4000",
       "sslPort": 0
@@ -15,13 +19,12 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "ClientService": {
-      "commandName": "Project",
+    "IIS Express Release": {
+      "commandName": "IISExpress",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": "https://localhost:5001;http://localhost:5000"
+        "ASPNETCORE_ENVIRONMENT": "Release"
+      }
     }
   }
 }

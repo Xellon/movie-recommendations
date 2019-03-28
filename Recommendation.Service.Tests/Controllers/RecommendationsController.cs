@@ -22,6 +22,7 @@ namespace Recommendation.Service.Controllers.Tests
             _handlerMock = new Mock<IQueueHandler>();
 
             _controller = new Controllers.RecommendationsController(
+                null,
                 _storageMock.Object, 
                 _queueMock.Object,
                 _handlerMock.Object);
