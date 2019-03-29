@@ -1,1 +1,3 @@
-docker run --name recommendation-client -p 3000:3000 xellon/recommendation-client:latest
+docker stop recommendation-client
+docker rm recommendation-client
+docker run --name recommendation-client -p 4000:4000 xellon/recommendation-client:latest
