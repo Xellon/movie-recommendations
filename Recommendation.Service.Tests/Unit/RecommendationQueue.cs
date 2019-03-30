@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using Moq;
 
-namespace Recommendation.Service.Tests
+namespace Recommendation.Service.Tests.Unit
 {
     [TestClass]
     class RecommendationQueue

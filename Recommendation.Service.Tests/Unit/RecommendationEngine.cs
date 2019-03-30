@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Moq;
 using System.Threading.Tasks;
 
-namespace Recommendation.Service.Tests
+namespace Recommendation.Service.Tests.Unit
 {
     [TestClass]
     public class RecommendationEngine

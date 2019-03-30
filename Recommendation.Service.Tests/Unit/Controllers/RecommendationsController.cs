@@ -4,7 +4,7 @@ using Moq;
 using System;
 using System.Collections.Generic;
 
-namespace Recommendation.Service.Controllers.Tests
+namespace Recommendation.Service.Controllers.Tests.Unit
 {
     [TestClass]
     public class RecommendationsController
