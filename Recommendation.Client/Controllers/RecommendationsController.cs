@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace Recommendation.Client.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
-    [ApiController]
     public class RecommendationsController : ControllerBase
     {
         private readonly Database.DatabaseContext _context;
@@ -34,7 +32,7 @@ namespace Recommendation.Client.Controllers
 
             var result = await _client.PostAsJsonAsync(uri, tagIds);
 
-            if (result.IsSuccessStatusCode)
+            if (!result.IsSuccessStatusCode)
                 return BadRequest();
 
             var queuedRecommendationId = await result.Content.ReadAsAsync<int>();
@@ -48,7 +46,7 @@ namespace Recommendation.Client.Controllers
 
                 var statusResult = await CheckStatus(queuedRecommendationId);
 
-                if (statusResult.Result.GetType() != typeof(OkObjectResult))
+                if (!(statusResult.Result is null) && statusResult.Result.GetType() != typeof(OkResult))
                     return BadRequest();
 
                 if (statusResult.Value != Database.RecommendationStatus.InProgress
@@ -58,10 +56,10 @@ namespace Recommendation.Client.Controllers
 
             var recommendationResult = await GetRecommendationId(queuedRecommendationId);
 
-            if (recommendationResult.Result.GetType() != typeof(OkObjectResult))
+            if (!(recommendationResult.Result is null) && recommendationResult.Result.GetType() != typeof(OkResult))
                 return BadRequest();
 
-            return Ok(recommendationResult.Value);
+            return recommendationResult.Value;
         }
 
         [HttpPost("status")]
@@ -73,12 +71,12 @@ namespace Recommendation.Client.Controllers
 
             var result = await _client.GetAsync(uri);
 
-            if (result.IsSuccessStatusCode)
+            if (!result.IsSuccessStatusCode)
                 return BadRequest();
 
             var status = await result.Content.ReadAsAsync<Database.RecommendationStatus>();
 
-            return Ok(status);
+            return status;
         }
 
         [HttpPost("id")]
@@ -90,12 +88,12 @@ namespace Recommendation.Client.Controllers
 
             var result = await _client.GetAsync(uri);
 
-            if (result.IsSuccessStatusCode)
+            if (!result.IsSuccessStatusCode)
                 return BadRequest();
 
             var recommendationId = await result.Content.ReadAsAsync<int>();
 
-            return Ok(recommendationId);
+            return recommendationId;
         }
     }
 }

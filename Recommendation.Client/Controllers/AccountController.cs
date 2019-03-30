@@ -22,13 +22,13 @@ namespace Recommendation.Client.Controllers
         }
 
         [HttpPost("[action]")]
-        public async Task<ActionResult<int>> Login([FromBody]LoginForm form)
+        public async Task<ActionResult<string>> Login([FromBody]LoginForm form)
         {
             var user = await _userManager.FindByEmailAsync(form.Email);
             if(await _userManager.CheckPasswordAsync(user, form.Password))
             {
                 await _signInManager.SignInAsync(user, false);
-                return Ok(user.Id);
+                return user.Id;
             }
 
             return Unauthorized();

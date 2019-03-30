@@ -48,7 +48,7 @@ export class RequestMovie extends React.Component<{}, State> {
     this.setState({ requestStatus: RequestStatus.Pending });
 
     const response = await Utils.fetchBackend(
-      `/api/data/recommendations/generate?userId=${user.id}`, {
+      `/api/recommendations/generate?userId=${user.id}`, {
         method: "POST",
         headers: {
           "Accept": "application/json",

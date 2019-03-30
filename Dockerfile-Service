@@ -18,4 +18,4 @@ RUN dotnet publish "Recommendation.Service.csproj" -c Release -o /app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
-ENTRYPOINT ["dotnet", "Recommendation.Service.dll"]
+ENTRYPOINT ["dotnet", "Recommendation.Service.dll",  "--environment=Release"]
