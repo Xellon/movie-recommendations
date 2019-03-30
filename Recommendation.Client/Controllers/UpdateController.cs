@@ -14,15 +14,16 @@ namespace Recommendation.Client.Controllers
     [ApiController]
     public class UpdateController : ControllerBase
     {
-        readonly HttpClient _client = new HttpClient();
+        readonly HttpClient _client;
         readonly IConfiguration _configuration;
         readonly TMDB.RequestBuilder _requestBuilder;
         private DatabaseContext _context;
 
-        public UpdateController(IConfiguration configuration, DatabaseContext context)
+        public UpdateController(IConfiguration configuration, DatabaseContext context, HttpClient httpClient)
         {
             _context = context;
             _configuration = configuration;
+            _client = httpClient;
             _requestBuilder = new TMDB.RequestBuilder(configuration);
         }
 

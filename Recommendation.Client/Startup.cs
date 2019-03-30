@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Recommendation.Database;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http;
 
 namespace Recommendation.Client
 {
@@ -21,6 +22,8 @@ namespace Recommendation.Client
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton(Configuration);
+
+            services.AddSingleton<HttpClient>();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
