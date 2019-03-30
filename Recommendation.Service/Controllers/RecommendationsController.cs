@@ -13,15 +13,19 @@ namespace Recommendation.Service.Controllers
         private readonly IQueuedRecommendationStorage _storage;
         private readonly IQueueHandler _handler;
 
-        public RecommendationsController(IConfiguration configuration = null, IQueuedRecommendationStorage storage = null, IRecommendationQueue queue = null, IQueueHandler handler = null)
+        public RecommendationsController(IConfiguration configuration, IQueuedRecommendationStorage storage = null, IRecommendationQueue queue = null, IQueueHandler handler = null)
         {
             _storage = storage;
             _queue = queue is null ? new RecommendationQueue(_storage) : queue;
-            
-            var optionsBuilder = new DbContextOptionsBuilder<Database.DatabaseContext>();
-            optionsBuilder.UseSqlServer(configuration["DatabaseConnectionString"]);
 
-            _handler = handler is null ? QueueHandler.GetOrCreate(optionsBuilder.Options, _queue, _storage) : handler;
+            if (handler is null)
+            {
+                var optionsBuilder = new DbContextOptionsBuilder<Database.DatabaseContext>();
+                optionsBuilder.UseSqlServer(configuration["DatabaseConnectionString"]);
+                _handler = QueueHandler.GetOrCreate(optionsBuilder.Options, _queue, _storage);
+            }
+            else
+                _handler = handler;
         }
 
         [HttpPost("[action]")]
