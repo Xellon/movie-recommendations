@@ -37,12 +37,10 @@ namespace Recommendation.Database
             base.OnModelCreating(modelBuilder);
         }
 
-        //public DbSet<User> Users { get; set; }
         public DbSet<Movie> Movies { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<TagWhish> TagWhishes { get; set; }
         public DbSet<MovieTag> MovieTags { get; set; }
-        public DbSet<QueuedRecommendation> QueuedRecommendations { get; set; }
         public DbSet<Recommendation> Recommendations { get; set; }
         public DbSet<RecommendedMovie> RecommendedMovies { get; set; }
         public DbSet<UserMovie> UserMovies { get; set; }

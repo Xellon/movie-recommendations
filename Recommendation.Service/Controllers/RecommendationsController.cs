@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace Recommendation.Service.Controllers
 {
@@ -11,20 +13,20 @@ namespace Recommendation.Service.Controllers
         private readonly IQueuedRecommendationStorage _storage;
         private readonly IQueueHandler _handler;
 
-        public RecommendationsController(Database.DatabaseContext databaseContext = null, IQueuedRecommendationStorage storage = null, IRecommendationQueue queue = null, IQueueHandler handler = null)
+        public RecommendationsController(IConfiguration configuration = null, IQueuedRecommendationStorage storage = null, IRecommendationQueue queue = null, IQueueHandler handler = null)
         {
-            _storage = storage is null ? new QueuedRecommendationStorage() : storage;
+            _storage = storage;
             _queue = queue is null ? new RecommendationQueue(_storage) : queue;
-            _handler = handler is null ? new QueueHandler(databaseContext, _queue, _storage) : handler;
+            
+            var optionsBuilder = new DbContextOptionsBuilder<Database.DatabaseContext>();
+            optionsBuilder.UseSqlServer(configuration["DatabaseConnectionString"]);
+
+            _handler = handler is null ? QueueHandler.GetOrCreate(optionsBuilder.Options, _queue, _storage) : handler;
         }
 
         [HttpPost("[action]")]
         public ActionResult<int> QueueRecommendation(string userId, [FromBody]List<int> requestedTagIds)
         {
-            //// If something bad with services
-            //return StatusCode(500);
-
-            // If request params are wrong
             if (userId is null || requestedTagIds is null)
                 return BadRequest();
 

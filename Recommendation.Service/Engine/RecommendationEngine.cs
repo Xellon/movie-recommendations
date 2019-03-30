@@ -8,42 +8,51 @@ namespace Recommendation.Service
 {
     public class RecommendationEngine : IRecommendationEngine
     {
-        private readonly Database.DatabaseContext _databaseContext;
+        private readonly DbContextOptions<Database.DatabaseContext> _dbContextOptions;
 
-        public RecommendationEngine(Database.DatabaseContext databaseContext)
+        public RecommendationEngine(DbContextOptions<Database.DatabaseContext> dbContextOptions)
         {
-            _databaseContext = databaseContext;
+            _dbContextOptions = dbContextOptions;
         }
 
         public async Task<int> FindOutStuff(RecommendationParameters parameters)
         {
-            var movies = await _databaseContext.Movies
-                .Where(m => parameters.RequestedTagIds.Contains(m.Id))
-                .OrderByDescending(m => m.AverageRating)
-                .Take(10)
-                .ToListAsync();
+            var context = new Database.DatabaseContext(_dbContextOptions);
+
+            var recommendedMovies = (
+                from movies in context.Movies
+                join tags in context.MovieTags on movies.Id equals tags.MovieId
+                where parameters.RequestedTagIds.Contains(tags.TagId)
+                select new { movies.Id, Rating = movies.AverageRating, }
+                ).Distinct().OrderByDescending(movie => movie.Rating).Take(10);
+
+            if (recommendedMovies.Count() == 0)
+                return 0;
 
             var recommendation = new Database.Recommendation()
             {
                 UserId = parameters.UserId,
             };
 
-            _databaseContext.Recommendations.Add(recommendation);
-            await _databaseContext.SaveChangesAsync();
+            context.Recommendations.Attach(recommendation);
+            context.Recommendations.Add(recommendation);
+            await context.SaveChangesAsync();
 
-            var recommendedMovies = movies.Select(m =>
-                new Database.RecommendedMovie()
-                {
-                    MovieId = m.Id,
-                    PossibleRating = m.AverageRating,
-                    RecommendationId = recommendation.Id,
-                });
-
-            foreach (var movie in recommendedMovies)
+            foreach (var movie in await recommendedMovies.ToListAsync())
             {
-                _databaseContext.RecommendedMovies.Add(movie);
+                var recommendedMovie = new Database.RecommendedMovie()
+                {
+                    MovieId = movie.Id,
+                    PossibleRating = movie.Rating,
+                    RecommendationId = recommendation.Id,
+                };
+
+                context.RecommendedMovies.Attach(recommendedMovie);
+                context.RecommendedMovies.Add(recommendedMovie);
             }
-            await _databaseContext.SaveChangesAsync();
+
+            await context.SaveChangesAsync();
+            context.Dispose();
 
             return recommendation.Id;
         }

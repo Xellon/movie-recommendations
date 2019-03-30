@@ -7,6 +7,7 @@ namespace Recommendation.Service
     {
         int QueueRecommendation(string userId, List<int> requestedTagIds);
         QueuedRecommendation GetUnstartedRecommendation();
+        int QueuedCount { get; }
     }
 
     public class RecommendationQueue : IRecommendationQueue
@@ -33,5 +34,7 @@ namespace Recommendation.Service
         {
             return _storage.GetOldestUnstartedRecommendation();
         }
+
+        public int QueuedCount => _storage.QueuedCount;
     }
 }

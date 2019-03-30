@@ -22,7 +22,10 @@ namespace Recommendation.Service
         {
             services.AddHealthChecks();
 
-            services.AddDbContext<DatabaseContext>(options => options.UseSqlServer("Server=localhost,1433;Database=recommendations;UserID=application;Password=application;Trusted_Connection=True;"));
+            services.AddSingleton(Configuration);
+
+            services.AddSingleton<IQueuedRecommendationStorage>(new QueuedRecommendationStorage());
+            services.AddDbContext<DatabaseContext>(options => options.UseSqlServer(Configuration["DatabaseConnectionString"]));
 
             services
                 .AddMvc()
