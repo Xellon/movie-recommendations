@@ -34,15 +34,20 @@ namespace Recommendation.Database
             modelBuilder.Entity<RecommendedMovie>()
                 .HasKey(m => new { m.MovieId, m.RecommendationId });
 
+            modelBuilder.Entity<MovieCreator>()
+                .HasKey(m => new { m.MovieId, m.CreatorId });
+
             base.OnModelCreating(modelBuilder);
         }
 
+        public DbSet<Creator> Creators { get; set; }
         public DbSet<Movie> Movies { get; set; }
-        public DbSet<Tag> Tags { get; set; }
-        public DbSet<TagWhish> TagWhishes { get; set; }
         public DbSet<MovieTag> MovieTags { get; set; }
+        public DbSet<MovieCreator> MovieCreators { get; set; }
         public DbSet<Recommendation> Recommendations { get; set; }
         public DbSet<RecommendedMovie> RecommendedMovies { get; set; }
+        public DbSet<Tag> Tags { get; set; }
+        public DbSet<TagWhish> TagWhishes { get; set; }
         public DbSet<UserMovie> UserMovies { get; set; }
     }
 }
