@@ -5,6 +5,6 @@ namespace Recommendation.Service
 {
     public interface IRecommendationEngine
     {
-        Task<int> FindOutStuff(RecommendationParameters parameters);
+        Task<int> GenerateRecommendation(RecommendationParameters parameters);
     }
 }

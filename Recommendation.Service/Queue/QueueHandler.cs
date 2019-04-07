@@ -33,7 +33,7 @@ namespace Recommendation.Service
             _queue = queue;
             _storage = storage;
 
-            _recommendationEngine = new RecommendationEngine(dbContextOptions);
+            _recommendationEngine = new SQLRecommendationEngine(dbContextOptions);
             _runningTasks = new List<RecommendationTask>(ConcurrentRecommendationsLimit);
 
             Task.Run(() =>
@@ -78,7 +78,7 @@ namespace Recommendation.Service
 
                 queuedRecommendation.Status = Database.RecommendationStatus.InProgress;
 
-                var task = _recommendationEngine.FindOutStuff(queuedRecommendation.RecommendationParameters);
+                var task = _recommendationEngine.GenerateRecommendation(queuedRecommendation.RecommendationParameters);
                 _runningTasks.Add(new RecommendationTask
                 {
                     Task = task,
