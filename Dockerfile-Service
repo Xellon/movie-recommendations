@@ -2,6 +2,11 @@ FROM mcr.microsoft.com/dotnet/core/aspnet:2.2 AS base
 WORKDIR /app
 EXPOSE 3010
 
+#Build Python.Runtime.DLL
+#RUN git clone https://github.com/pythonnet/pythonnet
+#WORKDIR ./pythonnet
+#RUN python setup.py bdist_wheel --xplat
+
 FROM mcr.microsoft.com/dotnet/core/sdk:2.2 AS build
 WORKDIR /src
 COPY Recommendation.Database/Recommendation.Database.csproj Recommendation.Database/

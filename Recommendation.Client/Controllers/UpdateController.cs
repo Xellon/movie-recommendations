@@ -73,7 +73,7 @@ namespace Recommendation.Client.Controllers
                 from m in _context.Movies
                 join mc in _context.MovieCreators on m.Id equals mc.MovieId into mcs // LEFT JOIN
                 from mc in mcs.DefaultIfEmpty()
-                where mc.CreatorId == null
+                where (mc.CreatorId as int?) == null
                 select m.Id
                 );
 

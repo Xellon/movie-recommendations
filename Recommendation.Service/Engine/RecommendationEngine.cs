@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.ML;
+using Microsoft.ML.Trainers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,46 +17,40 @@ namespace Recommendation.Service
             _dbContextOptions = dbContextOptions;
         }
 
-        public async Task<int> FindOutStuff(RecommendationParameters parameters)
+        public async Task<int> GenerateRecommendation(RecommendationParameters parameters)
+        {
+            
+
+            return 0;
+        }
+
+        public async Task<ITransformer> CreateCollaborativeModel()
         {
             var context = new Database.DatabaseContext(_dbContextOptions);
+            var userMovies = await context.UserMovies.ToListAsync();
+            var mlContext = new MLContext();
 
-            var recommendedMovies = (
-                from movies in context.Movies
-                join tags in context.MovieTags on movies.Id equals tags.MovieId
-                where parameters.RequestedTagIds.Contains(tags.TagId)
-                select new { movies.Id, Rating = movies.AverageRating, }
-                ).Distinct().OrderByDescending(movie => movie.Rating).Take(10);
+            var trainingDataView = mlContext.Data.LoadFromEnumerable(userMovies);
 
-            if (recommendedMovies.Count() == 0)
-                return 0;
+            IEstimator<ITransformer> estimator =
+                mlContext.Transforms.Conversion
+                    .MapValueToKey(outputColumnName: "userIdEncoded", inputColumnName: "UserId")
+                .Append(mlContext.Transforms.Conversion
+                    .MapValueToKey(outputColumnName: "movieIdEncoded", inputColumnName: "MovieId"));
 
-            var recommendation = new Database.Recommendation()
+            var options = new MatrixFactorizationTrainer.Options
             {
-                UserId = parameters.UserId,
+                MatrixColumnIndexColumnName = "userIdEncoded",
+                MatrixRowIndexColumnName = "movieIdEncoded",
+                LabelColumnName = "Rating",
+                NumberOfIterations = 20,
+                ApproximationRank = 100
             };
 
-            context.Recommendations.Attach(recommendation);
-            context.Recommendations.Add(recommendation);
-            await context.SaveChangesAsync();
+            var trainerEstimator = estimator.Append(mlContext.Recommendation().Trainers.MatrixFactorization(options));
+            ITransformer model = trainerEstimator.Fit(trainingDataView);
 
-            foreach (var movie in await recommendedMovies.ToListAsync())
-            {
-                var recommendedMovie = new Database.RecommendedMovie()
-                {
-                    MovieId = movie.Id,
-                    PossibleRating = movie.Rating,
-                    RecommendationId = recommendation.Id,
-                };
-
-                context.RecommendedMovies.Attach(recommendedMovie);
-                context.RecommendedMovies.Add(recommendedMovie);
-            }
-
-            await context.SaveChangesAsync();
-            context.Dispose();
-
-            return recommendation.Id;
+            return model;
         }
     }
 }
