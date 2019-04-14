@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,12 +10,29 @@ namespace Recommendation.Service
     public class PythonRecommendationEngine : IRecommendationEngine
     {
         private readonly DbContextOptions<Database.DatabaseContext> _dbContextOptions;
-        private readonly IConfiguration _configuration;
 
-        public PythonRecommendationEngine(DbContextOptions<Database.DatabaseContext> dbContextOptions, IConfiguration configuration)
+        private IEnumerable<Database.Tag> _tags = null;
+
+        private IEnumerable<Database.Tag> Tags {
+            get {
+                if (_tags is null)
+                {
+                    var context = new Database.DatabaseContext(_dbContextOptions);
+                    _tags = context.Tags;
+                }
+
+                return _tags;
+            }
+        }
+
+        public PythonRecommendationEngine(DbContextOptions<Database.DatabaseContext> dbContextOptions)
         {
             _dbContextOptions = dbContextOptions;
-            _configuration = configuration;
+            if (!PythonEngine.IsInitialized)
+            {
+                PythonEngine.Initialize();
+                PythonEngine.BeginAllowThreads();
+            }
         }
 
         public async Task<int> GenerateRecommendation(RecommendationParameters parameters)
@@ -26,33 +42,50 @@ namespace Recommendation.Service
             return 0;
         }
 
-        public async Task<int> FindKeywords()
+        public async Task<IEnumerable<IEnumerable<string>>> FindKeywords()
         {
             var context = new Database.DatabaseContext(_dbContextOptions);
             var movies = context.Movies;
 
-            try
-            {
-                using (Py.GIL())
-                {
-                    dynamic rake_nltk = Py.Import("rake_nltk");
-                    var keywords = new List<string[]>();
+            return await PythonMethods.FindKeywords(movies.Select(m => m.Description.ToLower()));
+        }
 
-                    foreach (var description in movies.Select(m => m.Description.ToLower()))
-                    {
-                        dynamic rake = rake_nltk.Rake();
-                        rake.extract_keywords_from_text(description);
-                        PyList keys = PyList.AsList(rake.get_word_degrees().keys());
-                        keywords.Add((string[])keys.AsManagedObject(typeof(string[])));
-                    }
-                }
-            }
-            catch(Exception e)
+        public async Task<double[,]> FindSimilarities()
+        {
+            var context = new Database.DatabaseContext(_dbContextOptions);
+            var movies = context.Movies;
+
+            var stringifiedMatrix = MovieMatrixToString(movies);
+
+            return await PythonMethods.FindSimilarities(stringifiedMatrix);
+        }
+
+        public string MovieMatrixToString(IEnumerable<Database.Movie> movies)
+        {
+            var matrixString = "";
+
+            foreach (var movie in movies)
             {
-                Console.Write(e.Message);
+                matrixString += string.Format("{0} {1} {2}; ",
+                    movie.AverageRating,
+                    movie.Date.Year,
+                    MapTags(movie.Tags));
             }
 
-            return 0;
+            return matrixString.Trim(' ').Trim(';');
+        }
+
+        string MapTags(IEnumerable<Database.MovieTag> tags)
+        {
+            if (tags is null)
+                return "";
+
+            var tagString = "";
+            foreach (var tag in Tags)
+            {
+                tagString += tags.FirstOrDefault(t => t.TagId == tag.Id) is null  ? "0 " : "1 ";
+            }
+            return tagString.TrimEnd();
         }
     }
 }
