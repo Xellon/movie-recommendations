@@ -74,6 +74,65 @@ namespace Recommendation.Service.Tests.Unit
         }
 
         [TestMethod]
+        public async Task FindSimilarities()
+        {
+            var contextOptions = PrepareDatabaseOptions();
+
+            var context = new Database.DatabaseContext(contextOptions);
+
+            context.Movies.Add(new Database.Movie
+            {
+                Id = 1,
+                Date = new DateTime(2017, 1, 1),
+                AverageRating = 8,
+                Tags = new List<Database.MovieTag>()
+                {
+                    new Database.MovieTag {MovieId = 1, TagId = 2},
+                    new Database.MovieTag {MovieId = 1, TagId = 4},
+                    new Database.MovieTag {MovieId = 1, TagId = 8},
+                }
+            });
+            context.Movies.Add(new Database.Movie
+            {
+                Id = 2,
+                Date = new DateTime(2016, 1, 1),
+                AverageRating = 7,
+                Tags = new List<Database.MovieTag>()
+                {
+                    new Database.MovieTag {MovieId = 2, TagId = 2},
+                    new Database.MovieTag {MovieId = 2, TagId = 8},
+                }
+            });
+            context.Movies.Add(new Database.Movie
+            {
+                Id = 3,
+                Date = new DateTime(2012, 1, 1),
+                AverageRating = 9,
+                Tags = new List<Database.MovieTag>()
+                {
+                    new Database.MovieTag {MovieId = 3, TagId = 4},
+                }
+            });
+            context.Movies.Add(new Database.Movie
+            {
+                Id = 4,
+                Date = new DateTime(1988, 1, 1),
+                AverageRating = 5,
+                Tags = new List<Database.MovieTag>()
+                {
+                    new Database.MovieTag {MovieId = 4, TagId = 4},
+                }
+            });
+            context.Tags.Add(new Database.Tag() { Id = 2, Text = "A" });
+            context.Tags.Add(new Database.Tag() { Id = 4, Text = "B" });
+            context.Tags.Add(new Database.Tag() { Id = 8, Text = "C" });
+            context.SaveChanges();
+
+            var engine = new Service.PythonRecommendationEngine(contextOptions);
+            var similaritiesMatrix = await engine.FindSimilarities();
+        }
+
+        [TestMethod]
         public void MovieMatrixToString()
         {
             var contextOptions = PrepareDatabaseOptions();
@@ -112,7 +171,7 @@ namespace Recommendation.Service.Tests.Unit
             var matrixString = engine.MovieMatrixToString(context.Movies);
 
             context.Dispose();
-            Assert.AreEqual("8 2019 1 1 1; 7 2019 1 0 1", matrixString);
+            Assert.AreEqual("0.8 0 1 1 1; 0.7 0 1 0 1", matrixString);
         }
     }
 }

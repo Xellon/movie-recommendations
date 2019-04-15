@@ -47,5 +47,22 @@ namespace Recommendation.Service.Tests.Unit
             var serializedMatrix = JsonConvert.SerializeObject(similarityMatrix);
             Assert.AreEqual("[[1.0,0.0],[0.0,1.0]]", serializedMatrix);
         }
+
+        [TestMethod]
+        public async Task VectorizeDocuments()
+        {
+            var documents = new string[]
+            {
+                "arm beard cinnamon",
+                "beard cinnamon",
+                "arm cinnamon"
+            };
+
+            var matrix = await Service.PythonMethods.VectorizeDocuments(documents);
+
+            var stringifiedMatrix = JsonConvert.SerializeObject(matrix);
+
+            Assert.AreEqual("[[1,1,1],[0,1,1],[1,0,1]]", stringifiedMatrix);
+        }
     }
 }

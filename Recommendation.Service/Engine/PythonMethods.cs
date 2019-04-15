@@ -9,7 +9,8 @@ namespace Recommendation.Service
     {
         public static Task<IEnumerable<string[]>> FindKeywords(IEnumerable<string> descriptions)
         {
-            return Task.Run(() => {
+            return Task.Run(() => 
+            {
                 var keywords = new List<string[]>();
                 using (Py.GIL())
                 {
@@ -28,35 +29,34 @@ namespace Recommendation.Service
             });
         }
 
-        //static string MatrixToString<T>(T[,] matrix)
-        //{
-        //    var matrixString = "";
-        //    for (int i = 0; i < matrix.GetLength(0); i++)
-        //    {
-        //        for (int j = 0; j < matrix.GetLength(1); j++)
-        //        {
-        //            matrixString += matrix[i, j] + " ";
-        //        }
+        public static Task<long[,]> VectorizeDocuments(IEnumerable<string> documents)
+        {
+            return Task.Run(() => 
+            {
+                using (Py.GIL())
+                {
+                    dynamic sklear_feature_extraction_text = Py.Import("sklearn.feature_extraction.text");
+                    dynamic countVectorizer = sklear_feature_extraction_text.CountVectorizer();
+                    dynamic np = Py.Import("numpy");
 
-        //        if (i + 1 < matrix.GetLength(0))
-        //            matrixString = matrixString.TrimEnd() + "; ";
-        //    }
-        //    return matrixString;
-        //}
+                    dynamic countMatrixObject = countVectorizer.fit_transform(documents);
+                    PyList countMatrix = PyList.AsList(countMatrixObject.toarray());
+                    var matrix = (long[][])countMatrix.AsManagedObject(typeof(long[][]));
+
+                    return ConvertMatrix(matrix);
+                }
+            });
+        }
 
         public static Task<double[,]> FindSimilarities(string stringifiedMatrix)
         {
-            return Task.Run(() => {
+            return Task.Run(() => 
+            {
                 using (Py.GIL())
                 {
                     dynamic pairwise = Py.Import("sklearn.metrics.pairwise");
                     dynamic cosine_similarity = pairwise.cosine_similarity;
                     dynamic np = Py.Import("numpy");
-
-
-                    //dynamic countVectorizer = sklearn.feature_extraction.text.CountVectorizer();
-
-                    //dynamic count_matrix = countVectorizer.fit_transform("");
 
                     dynamic matrix = np.array(np.mat(stringifiedMatrix));
 
@@ -78,17 +78,33 @@ namespace Recommendation.Service
             var length = similarityList.Length();
             var similarities = new double[length, length];
 
-            for (int i = 0; i < similarityList.Length(); i++)
+            for (int i = 0; i < length; i++)
             {
                 var columnRows = PyList.AsList(similarityList[i]);
                 var row = (double[])columnRows.AsManagedObject(typeof(double[]));
-                for (int j = 0; j < row.Length; j++)
+                for (int j = 0; j < length; j++)
                 {
                     similarities[i, j] = row[j];
                 }
             }
 
             return similarities;
+        }
+
+        private static T[,] ConvertMatrix<T>(T[][] matrix)
+        {
+            var xLength = matrix.Length;
+            var yLength = matrix[0].Length;
+
+            var convertedMatrix = new T[xLength, yLength];
+            for (int i = 0; i < xLength; i++)
+            {
+                for (int j = 0; j < yLength; j++)
+                {
+                    convertedMatrix[i, j] = matrix[i][j];
+                }
+            }
+            return convertedMatrix;
         }
     }
 }
