@@ -6,5 +6,6 @@ namespace Recommendation.Service
     public interface IRecommendationEngine
     {
         Task<int> GenerateRecommendation(RecommendationParameters parameters);
+        Task PrepareData();
     }
 }

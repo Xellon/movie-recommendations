@@ -22,6 +22,8 @@ namespace Recommendation.Service
         {
             services.AddHealthChecks();
 
+            services.Configure<PythonEngineOptions>(Configuration);
+
             services.AddSingleton(Configuration);
 
             services.AddSingleton<IQueuedRecommendationStorage>(new QueuedRecommendationStorage());

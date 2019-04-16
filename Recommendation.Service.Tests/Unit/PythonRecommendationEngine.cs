@@ -12,6 +12,8 @@ namespace Recommendation.Service.Tests.Unit
     [TestClass]
     public class PythonRecommendationEngine
     {
+        private readonly PythonEngineOptions _engineOptions;
+
         private DbContextOptions<Database.DatabaseContext> PrepareDatabaseOptions()
         {
             var guid = Guid.NewGuid();
@@ -49,6 +51,14 @@ namespace Recommendation.Service.Tests.Unit
             return (contextOptions, context);
         }
 
+        public PythonRecommendationEngine()
+        {
+            _engineOptions = new PythonEngineOptions
+            {
+                RecommendationCacheLocation = "./TestCache"
+            };
+        }
+
         [ClassInitialize]
         public static void Init(TestContext testContext)
         {
@@ -64,7 +74,7 @@ namespace Recommendation.Service.Tests.Unit
         {
             (var contextOptions, var context) = PrepareDatabaseAndOptions();
 
-            var engine = new Service.PythonRecommendationEngine(contextOptions);
+            var engine = new Service.PythonRecommendationEngine(contextOptions, _engineOptions);
             var keywordLists = (await engine.FindDescriptionKeywords()).Select(keywords => keywords.OrderBy(word => word));
 
             var serializedKeywordLists = JsonConvert.SerializeObject(keywordLists);
@@ -127,7 +137,7 @@ namespace Recommendation.Service.Tests.Unit
             context.Tags.Add(new Database.Tag() { Id = 8, Text = "C" });
             context.SaveChanges();
 
-            var engine = new Service.PythonRecommendationEngine(contextOptions);
+            var engine = new Service.PythonRecommendationEngine(contextOptions, _engineOptions);
             var similaritiesMatrix = await engine.FindSimilarities();
         }
 
@@ -166,7 +176,7 @@ namespace Recommendation.Service.Tests.Unit
             context.Tags.Add(new Database.Tag() { Id = 8, Text = "C" });
             context.SaveChanges();
 
-            var engine = new Service.PythonRecommendationEngine(contextOptions);
+            var engine = new Service.PythonRecommendationEngine(contextOptions, _engineOptions);
             var matrixString = JsonConvert.SerializeObject(engine.CreateMovieMatrix(context.Movies));
             Assert.AreEqual("[[0.8,0.0,1.0,1.0,1.0],[0.7,0.0,1.0,0.0,1.0]]", matrixString);
         }

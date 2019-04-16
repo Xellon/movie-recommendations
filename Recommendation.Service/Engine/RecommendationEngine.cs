@@ -24,6 +24,11 @@ namespace Recommendation.Service
             return 0;
         }
 
+        public Task PrepareData()
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<ITransformer> CreateCollaborativeModel()
         {
             var context = new Database.DatabaseContext(_dbContextOptions);

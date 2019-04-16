@@ -55,5 +55,10 @@ namespace Recommendation.Service
 
             return recommendation.Id;
         }
+
+        public Task PrepareData()
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

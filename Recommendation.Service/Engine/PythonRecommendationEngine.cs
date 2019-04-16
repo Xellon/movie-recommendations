@@ -4,13 +4,27 @@ using System.Linq;
 using System.Threading.Tasks;
 using Python.Runtime;
 using System;
+using System.IO;
 
 namespace Recommendation.Service
 {
+    public class PythonEngineOptions
+    {
+        public string RecommendationCacheLocation { get; set; }
+        public string SimilarityMatrixFilename { get; set; } = "similarityMatrix.txt";
+        public string IdArrayFilename { get; set; } = "idArray.txt";
+    }
+
     public class PythonRecommendationEngine : IRecommendationEngine
     {
-        private readonly DbContextOptions<Database.DatabaseContext> _dbContextOptions;
+        struct SimilarityObject
+        {
+            public int Index { get; set; }
+            public double Similarity { get; set; }
+        }
 
+        private readonly DbContextOptions<Database.DatabaseContext> _dbContextOptions;
+        private readonly PythonEngineOptions _options;
         private IEnumerable<Database.Tag> _tags = null;
 
         private IEnumerable<Database.Tag> Tags {
@@ -25,8 +39,9 @@ namespace Recommendation.Service
             }
         }
 
-        public PythonRecommendationEngine(DbContextOptions<Database.DatabaseContext> dbContextOptions)
+        public PythonRecommendationEngine(DbContextOptions<Database.DatabaseContext> dbContextOptions, PythonEngineOptions options)
         {
+            _options = options;
             _dbContextOptions = dbContextOptions;
             if (!PythonEngine.IsInitialized)
             {
@@ -37,18 +52,175 @@ namespace Recommendation.Service
 
         public async Task<int> GenerateRecommendation(RecommendationParameters parameters)
         {
-            
+            var context = new Database.DatabaseContext(_dbContextOptions);
+
+            var recommendedMovieIds = await GetRecommendedMovieIds(context, parameters);
+
+            var recommendation = new Database.Recommendation()
+            {
+                Date = DateTime.Now,
+                UserId = parameters.UserId
+            };
+            context.Attach(recommendation);
+            context.Add(recommendation);
+            await context.SaveChangesAsync();
+
+            var recommendedMovies = recommendedMovieIds.Select(rm => new Database.RecommendedMovie()
+            {
+                RecommendationId = recommendation.Id,
+                MovieId = rm
+            });
+            context.Attach(recommendedMovies);
+            context.Add(recommendedMovies);
+            await context.SaveChangesAsync();
 
             return 0;
+        }
+
+        private async Task<IEnumerable<int>> GetRecommendedMovieIds (Database.DatabaseContext context, RecommendationParameters parameters)
+        {
+            var movieIds = RetrieveMovieIdsFromCache();
+            var similarityMatrix = RetrieveSimilarityMatrixFromCache(movieIds);
+
+            var movies = await context.Movies.Include(m => m.Tags).ToListAsync();
+
+            // Get user movies that will be used to find recommendations
+            var userMovies = context.UserMovies.Include(um => um.Movie.Tags)
+                .Where(um => um.UserId == parameters.UserId
+                    && DoesMovieContainTags(um.Movie.Tags.Select(t => t.TagId), parameters.RequestedTagIds))
+                .Select(um => new { Id = um.MovieId, Rating = um.Rating });
+
+            // Fill user movies up if there are not enough of them
+            var allMovies = movies
+                .Where(m => DoesMovieContainTags(m.Tags.Select(t => t.TagId), parameters.RequestedTagIds))
+                .OrderByDescending(m => m.AverageRating)
+                .Select(m => new { Id = m.Id, Rating = (float)m.AverageRating })
+                .Take(Math.Max(0, 10 - userMovies.Count()))
+                .Union(userMovies);
+
+            // Limit matrix to only include requested tags
+            var isSimilarityAllowedFilters = CreateSimilarityMatrixFilter(similarityMatrix, movieIds, movies, parameters);
+
+            // Gather the most similar movies
+            var allSimilarities = new List<SimilarityObject>();
+            foreach (var item in allMovies)
+            {
+                var movieIndex = FindMovieIndex(movieIds, item.Id);
+
+                // Weight similarities by how good the movies are rated and include indicies in selection
+                var similarities = similarityMatrix[movieIndex]
+                    .Select((s, index) => new SimilarityObject { Similarity = s * (item.Rating / 10), Index = index })
+                    .Where(s => isSimilarityAllowedFilters[s.Index])
+                    .OrderByDescending(s => s.Similarity)
+                    .Take(5);
+
+                allSimilarities.AddRange(similarities);
+            }
+
+            // Get top recommended movie ids
+            var userMoviesIds = userMovies.Select(um => um.Id);
+            return allSimilarities
+                .Where(id => !userMoviesIds.Contains(id.Index))
+                .OrderByDescending(s => s.Similarity)
+                .Take(10)
+                .Select(s => movieIds[s.Index]);
+        }
+
+        private bool[] CreateSimilarityMatrixFilter(double[][] similarityMatrix, int[] movieIds, IEnumerable<Database.Movie> movies, RecommendationParameters parameters)
+        {
+            var isSimilarityAllowedFilters = new bool[similarityMatrix.GetLength(0)];
+            for (int i = 0; i < movieIds.Length; i++)
+            {
+                var movieTagIds = movies.First(m => m.Id == movieIds[i]).Tags.Select(t => t.TagId);
+
+                isSimilarityAllowedFilters[i] = DoesMovieContainTags(movieTagIds, parameters.RequestedTagIds);
+            }
+            return isSimilarityAllowedFilters;
+        }
+
+        private bool DoesMovieContainTags(IEnumerable<int> movieTagIds, IEnumerable<int> requestedTagIds)
+        {
+            foreach (var id in requestedTagIds)
+            {
+                if (!movieTagIds.Contains(id))
+                    return false;
+            }
+            return true;
+        }
+
+        private int FindMovieIndex(int[] movieIds, int movieId)
+        {
+            for (int i = 0; i < movieIds.Length; i++)
+            {
+                if (movieIds[i] == movieId)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private int[] RetrieveMovieIdsFromCache()
+        {
+            var path = Path.Join(_options.RecommendationCacheLocation, _options.IdArrayFilename);
+            var idsText = File.ReadAllText(path);
+            return idsText.Trim().Split(' ').Select(id => int.Parse(id)).ToArray();
+        }
+
+        private double[][] RetrieveSimilarityMatrixFromCache(int[] movieIds)
+        {
+            var matrixText = File.ReadAllLines(Path.Join(_options.RecommendationCacheLocation, _options.SimilarityMatrixFilename));
+            if (matrixText.Length != movieIds.Length)
+                return new double[0][];
+
+            var similarityMatrix = new double[matrixText.Length][];
+            for (int i = 0; i < matrixText.Length; i++)
+            {
+                similarityMatrix[i] = matrixText[i].Trim().Split(' ').Select(t => double.Parse(t)).ToArray();
+            }
+
+            return similarityMatrix;
         }
 
         public async Task PrepareData()
         {
             var (similarityMatrix, ids) = await FindSimilarities();
 
+            if (!Directory.Exists(_options.RecommendationCacheLocation))
+            {
+                Directory.CreateDirectory(_options.RecommendationCacheLocation);
+            }
 
-            // cache matrix
+            CacheSimilarityMatrix(similarityMatrix);
+            CacheMovieIdArray(ids);
+        }
 
+        private void CacheMovieIdArray(int[] ids)
+        {
+            var idArrayPath = Path.Join(_options.RecommendationCacheLocation, _options.IdArrayFilename);
+            using (StreamWriter file = new StreamWriter(idArrayPath))
+            {
+                file.Write(ids.Aggregate("", (w1, w2) => w1 + " " + w2));
+            }
+        }
+
+        private void CacheSimilarityMatrix(double[,] similarityMatrix)
+        {
+            var similarityMatrixPath = Path.Join(_options.RecommendationCacheLocation, _options.SimilarityMatrixFilename);
+            using (StreamWriter file = new StreamWriter(similarityMatrixPath))
+            {
+                for (int i = 0; i < similarityMatrix.GetLength(0); i++)
+                {
+                    for (int j = 0; j < similarityMatrix.GetLength(1); j++)
+                    {
+                        file.Write(similarityMatrix[i, j] + " ");
+                    }
+
+                    if (i < similarityMatrix.GetLength(0) - 1)
+                        file.Write(file.NewLine);
+                }
+            }
         }
 
         public async Task<IEnumerable<IEnumerable<string>>> FindDescriptionKeywords()
