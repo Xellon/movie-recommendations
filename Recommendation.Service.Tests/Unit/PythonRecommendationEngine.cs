@@ -60,16 +60,15 @@ namespace Recommendation.Service.Tests.Unit
         }
 
         [TestMethod]
-        public async Task FindKeywords()
+        public async Task FindDescriptionKeywords()
         {
             (var contextOptions, var context) = PrepareDatabaseAndOptions();
 
             var engine = new Service.PythonRecommendationEngine(contextOptions);
-            var keywordLists = (await engine.FindKeywords()).Select(keywords => keywords.OrderBy(word => word));
+            var keywordLists = (await engine.FindDescriptionKeywords()).Select(keywords => keywords.OrderBy(word => word));
 
             var serializedKeywordLists = JsonConvert.SerializeObject(keywordLists);
 
-            context.Dispose();
             Assert.AreEqual("[[\"hello\",\"jackass\",\"welcome\"],[\"hype\",\"machine\",\"welcome\"]]", serializedKeywordLists);
         }
 
@@ -133,7 +132,7 @@ namespace Recommendation.Service.Tests.Unit
         }
 
         [TestMethod]
-        public void MovieMatrixToString()
+        public void CreateMovieMatrix()
         {
             var contextOptions = PrepareDatabaseOptions();
 
@@ -144,7 +143,7 @@ namespace Recommendation.Service.Tests.Unit
                 Id = 1,
                 Date = DateTime.Now,
                 AverageRating = 8,
-                Tags = new List<Database.MovieTag> ()
+                Tags = new List<Database.MovieTag>()
                 {
                     new Database.MovieTag {MovieId = 1, TagId = 2},
                     new Database.MovieTag {MovieId = 1, TagId = 4},
@@ -168,10 +167,8 @@ namespace Recommendation.Service.Tests.Unit
             context.SaveChanges();
 
             var engine = new Service.PythonRecommendationEngine(contextOptions);
-            var matrixString = engine.MovieMatrixToString(context.Movies);
-
-            context.Dispose();
-            Assert.AreEqual("0.8 0 1 1 1; 0.7 0 1 0 1", matrixString);
+            var matrixString = JsonConvert.SerializeObject(engine.CreateMovieMatrix(context.Movies));
+            Assert.AreEqual("[[0.8,0.0,1.0,1.0,1.0],[0.7,0.0,1.0,0.0,1.0]]", matrixString);
         }
     }
 }

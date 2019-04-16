@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Python.Runtime;
 using System;
-using System.Globalization;
 
 namespace Recommendation.Service
 {
@@ -43,64 +42,151 @@ namespace Recommendation.Service
             return 0;
         }
 
-        public async Task<IEnumerable<IEnumerable<string>>> FindKeywords()
+        public async Task PrepareData()
         {
-            var context = new Database.DatabaseContext(_dbContextOptions);
-            var movies = context.Movies;
+            var (similarityMatrix, ids) = await FindSimilarities();
 
-            return await PythonMethods.FindKeywords(movies.Select(m => m.Description.ToLower()));
+
+            // cache matrix
+
         }
 
-        public async Task<double[,]> FindSimilarities()
+        public async Task<IEnumerable<IEnumerable<string>>> FindDescriptionKeywords()
         {
             var context = new Database.DatabaseContext(_dbContextOptions);
-            var movies = context.Movies.Include(m => m.Tags);
+            var movieDescriptions = await context.Movies
+                .Select(m => m.Description == null ? "" : m.Description.ToLower())
+                .ToListAsync();
 
-            var stringifiedMatrix = MovieMatrixToString(movies);
-
-            return await PythonMethods.FindSimilarities(stringifiedMatrix);
+            return await PythonMethods.FindKeywords(movieDescriptions);
         }
 
-        private string FormatDouble(double number) => number.ToString(new CultureInfo("en-US"));
+        public async Task<(double[,] similarityMatrix, int[] ids)>  FindSimilarities()
+        {
+            var context = new Database.DatabaseContext(_dbContextOptions);
+            var movies = await context.Movies.Include(m => m.Tags).ToListAsync();
 
-        private string FormatAverageRating(double rating, float weight = 1.0f)
+            var descriptionKeywords = await FindDescriptionKeywords();
+            var descriptionData = descriptionKeywords.Select(d => d.Aggregate("", (w1, w2) => w1 + " " + w2));
+
+            var descriptionMatrix = await VectorizeDescriptions(descriptionData);
+            var movieMatrix = CreateMovieMatrix(movies);
+
+            var joinedMatrix = Matrix.JoinMatrices(movieMatrix, Matrix.CastMatrix(descriptionMatrix));
+
+            var stringifiedMatrix = Matrix.MatrixToString(joinedMatrix);
+
+            var similarityMatrix = await PythonMethods.FindSimilarities(stringifiedMatrix);
+            var ids = movies.Select(m => m.Id).ToArray();
+
+            return (similarityMatrix, ids);
+        }
+
+        public async Task<long[,]> VectorizeDescriptions()
+        {
+            var context = new Database.DatabaseContext(_dbContextOptions);
+            var descriptions = await context.Movies.Select(m => m.Description).ToListAsync();
+
+            return await VectorizeDescriptions(descriptions);
+        }
+
+        public async Task<long[,]> VectorizeDescriptions(IEnumerable<string> descriptions)
+        {
+            var vectorizedDescriptions = await PythonMethods.VectorizeDocuments(descriptions);
+
+            return FilterVectorizedDescriptions(vectorizedDescriptions, 5, 90);
+        }
+
+        private long[,] FilterVectorizedDescriptions(long[,] descriptions, float lowerPercentage, float upperPercentage)
+        {
+            var markedColumns = new List<int>();
+            var totalEntries = descriptions.GetLength(0);
+            for (int j = 0; j < descriptions.GetLength(1); j++)
+            {
+                var entries = 0;
+
+                for (int i = 0; i < totalEntries; i++)
+                {
+                    if (descriptions[i, j] > 0)
+                    {
+                        descriptions[i, j] = 1;
+                        entries++;
+                    }      
+                }
+
+                var entryPercentage = (entries / (float)totalEntries) * 100;
+                if (lowerPercentage <= entryPercentage && entryPercentage <= upperPercentage)
+                {
+                    markedColumns.Add(j);
+                }
+            }
+
+            var newDescriptions = new long[totalEntries, markedColumns.Count];
+
+            int index = 0;
+            foreach (var columnIndex in markedColumns)
+            {
+                for (int rowIndex = 0; rowIndex < totalEntries; rowIndex++)
+                {
+                    newDescriptions[rowIndex, index] = descriptions[rowIndex, columnIndex];
+                }
+                index++;
+            }
+
+            return newDescriptions;
+        }
+
+        private double NormalizeAverageRating(double rating, float weight = 1.0f)
         {
             // Rating normalized to be [0;1]
-            return FormatDouble((rating / 10.0f ) * weight);
+            return (rating / 10.0f ) * weight;
         }
 
-        private string FormatYear(int year, float weight = 1.0f)
+        private double NormalizeYear(int year, float weight = 1.0f)
         {
             // How old is the movie, if less than 50 y old, normalized to be [0;1]
-            return FormatDouble(((DateTime.Now.Year - year) / 50.0f) * weight);
+            return ((DateTime.Now.Year - year) / 50.0f) * weight;
         }
 
-        public string MovieMatrixToString(IEnumerable<Database.Movie> movies)
+        public double[,] CreateMovieMatrix(IEnumerable<Database.Movie> movies)
         {
-            var matrixString = "";
+            var matrix = new double[movies.Count(), 2];
 
-            foreach (var movie in movies)
+            for (int i = 0; i < movies.Count(); i++)
             {
-                matrixString += string.Format("{0} {1} {2}; ",
-                    FormatAverageRating(movie.AverageRating), 
-                    FormatYear(movie.Date.Year), 
-                    MapTags(movie.Tags));
+                var movie = movies.ElementAt(i);
+                matrix[i, 0] = NormalizeAverageRating(movie.AverageRating);
+                matrix[i, 1] = NormalizeYear(movie.Date.Year);
             }
 
-            return matrixString.Trim(' ').Trim(';');
+            var tagMatrix = CreateTagMatrix(movies);
+
+            return Matrix.JoinMatrices(matrix, tagMatrix);
         }
 
-        string MapTags(IEnumerable<Database.MovieTag> tags, float weight = 1.0f)
+        private double[,] CreateTagMatrix(IEnumerable<Database.Movie> movies, float weight = 1.0f)
         {
-            if (tags is null)
-                return "";
+            var rowCount = movies.Count();
+            var columnCount = Tags.Count();
+            var matrix = new double[movies.Count(), Tags.Count()];
 
-            var tagString = "";
-            foreach (var tag in Tags)
+            for (int i = 0; i < rowCount; i++)
             {
-                tagString += tags.FirstOrDefault(t => t.TagId == tag.Id) is null  ? "0 " : $"{FormatDouble(weight)} ";
+                var movie = movies.ElementAt(i);
+
+                if (movie.Tags is null)
+                    continue;
+
+                var tagsIds = Tags.Select(t => t.Id).ToArray();
+
+                for (int j = 0; j < columnCount; j++)
+                {
+                    var tagId = tagsIds[j];
+                    matrix[i, j] = movie.Tags.FirstOrDefault(mt => mt.TagId == tagId) is null ? 0 : weight;
+                }
             }
-            return tagString.TrimEnd();
+
+            return matrix;
         }
     }
 }

@@ -33,17 +33,27 @@ namespace Recommendation.Service
         {
             return Task.Run(() => 
             {
-                using (Py.GIL())
+                try
                 {
-                    dynamic sklear_feature_extraction_text = Py.Import("sklearn.feature_extraction.text");
-                    dynamic countVectorizer = sklear_feature_extraction_text.CountVectorizer();
-                    dynamic np = Py.Import("numpy");
+                    using (Py.GIL())
+                    {
+                        dynamic sklear_feature_extraction_text = Py.Import("sklearn.feature_extraction.text");
+                        dynamic countVectorizer = sklear_feature_extraction_text.CountVectorizer();
+                        dynamic np = Py.Import("numpy");
 
-                    dynamic countMatrixObject = countVectorizer.fit_transform(documents);
-                    PyList countMatrix = PyList.AsList(countMatrixObject.toarray());
-                    var matrix = (long[][])countMatrix.AsManagedObject(typeof(long[][]));
+                        dynamic countMatrixObject = countVectorizer.fit_transform(documents);
+                        PyList countMatrix = PyList.AsList(countMatrixObject.toarray());
+                        var matrix = (long[][])countMatrix.AsManagedObject(typeof(long[][]));
 
-                    return ConvertMatrix(matrix);
+                        return ConvertMatrix(matrix);
+                    }
+                }
+                catch(PythonException e)
+                {
+                    if (e.Message.Contains("empty vocabulary"))
+                        return new long[0, 0];
+                    else
+                        throw e;
                 }
             });
         }
