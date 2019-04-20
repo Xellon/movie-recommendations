@@ -22,7 +22,7 @@ namespace Recommendation.Service.Controllers
             {
                 var optionsBuilder = new DbContextOptionsBuilder<Database.DatabaseContext>();
                 optionsBuilder.UseSqlServer(configuration["DatabaseConnectionString"]);
-                _handler = QueueHandler.GetOrCreate(optionsBuilder.Options, _queue, _storage);
+                _handler = QueueHandler.GetOrCreate(optionsBuilder.Options, configuration, _queue, _storage);
             }
             else
                 _handler = handler;

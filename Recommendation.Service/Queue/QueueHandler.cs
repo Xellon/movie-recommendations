@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,12 +29,14 @@ namespace Recommendation.Service
 
         private static QueueHandler _handlerInstance = null;
 
-        public QueueHandler(DbContextOptions<Database.DatabaseContext> dbContextOptions, IRecommendationQueue queue, IQueuedRecommendationStorage storage)
+        public QueueHandler(DbContextOptions<Database.DatabaseContext> dbContextOptions, IConfiguration configuration, IRecommendationQueue queue, IQueuedRecommendationStorage storage)
         {
             _queue = queue;
             _storage = storage;
 
-            _recommendationEngine = new SQLRecommendationEngine(dbContextOptions);
+            var engineOptions = configuration.Get<PythonEngineOptions>();
+
+            _recommendationEngine = new PythonRecommendationEngine(dbContextOptions, engineOptions);
             _runningTasks = new List<RecommendationTask>(ConcurrentRecommendationsLimit);
 
             Task.Run(() =>
@@ -49,10 +52,10 @@ namespace Recommendation.Service
         /// <summary>
         /// Either returns an already created instance or creates a new one. This is needed because mvc controllers are recreated on each request
         /// </summary>
-        public static QueueHandler GetOrCreate(DbContextOptions<Database.DatabaseContext> dbContextOptions, IRecommendationQueue queue, IQueuedRecommendationStorage storage)
+        public static QueueHandler GetOrCreate(DbContextOptions<Database.DatabaseContext> dbContextOptions, IConfiguration configuration, IRecommendationQueue queue, IQueuedRecommendationStorage storage)
         {
             if(_handlerInstance is null)
-                _handlerInstance = new QueueHandler(dbContextOptions, queue, storage);
+                _handlerInstance = new QueueHandler(dbContextOptions, configuration, queue, storage);
 
             return _handlerInstance;
         }
@@ -76,7 +79,7 @@ namespace Recommendation.Service
                 if (queuedRecommendation is null)
                     break;
 
-                queuedRecommendation.Status = Database.RecommendationStatus.InProgress;
+                _storage.SetRecommendationStatus(queuedRecommendation.Id, Database.RecommendationStatus.InProgress);
 
                 var task = _recommendationEngine.GenerateRecommendation(queuedRecommendation.RecommendationParameters);
                 _runningTasks.Add(new RecommendationTask
