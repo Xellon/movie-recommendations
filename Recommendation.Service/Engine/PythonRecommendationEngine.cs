@@ -25,6 +25,7 @@ namespace Recommendation.Service
 
         private readonly DbContextOptions<Database.DatabaseContext> _dbContextOptions;
         private readonly PythonEngineOptions _options;
+        private readonly PythonRecommendationEngineCache _cache;
         private IEnumerable<Database.Tag> _tags = null;
 
         private IEnumerable<Database.Tag> Tags {
@@ -48,6 +49,7 @@ namespace Recommendation.Service
                 PythonEngine.Initialize();
                 PythonEngine.BeginAllowThreads();
             }
+            _cache = new PythonRecommendationEngineCache(options);
         }
 
         public async Task<int> GenerateRecommendation(RecommendationParameters parameters)
@@ -79,8 +81,8 @@ namespace Recommendation.Service
 
         private async Task<IEnumerable<int>> GetRecommendedMovieIds (Database.DatabaseContext context, RecommendationParameters parameters)
         {
-            var movieIds = RetrieveMovieIdsFromCache();
-            var similarityMatrix = RetrieveSimilarityMatrixFromCache(movieIds);
+            var movieIds = _cache.RetrieveMovieIdsFromCache();
+            var similarityMatrix = _cache.RetrieveSimilarityMatrixFromCache(movieIds);
 
             var movies = await context.Movies.Include(m => m.Tags).ToListAsync();
 
@@ -161,28 +163,6 @@ namespace Recommendation.Service
             return -1;
         }
 
-        private int[] RetrieveMovieIdsFromCache()
-        {
-            var path = Path.Join(_options.RecommendationCacheLocation, _options.IdArrayFilename);
-            var idsText = File.ReadAllText(path);
-            return idsText.Trim().Split(' ').Select(id => int.Parse(id)).ToArray();
-        }
-
-        private double[][] RetrieveSimilarityMatrixFromCache(int[] movieIds)
-        {
-            var matrixText = File.ReadAllLines(Path.Join(_options.RecommendationCacheLocation, _options.SimilarityMatrixFilename));
-            if (matrixText.Length != movieIds.Length)
-                return new double[0][];
-
-            var similarityMatrix = new double[matrixText.Length][];
-            for (int i = 0; i < matrixText.Length; i++)
-            {
-                similarityMatrix[i] = matrixText[i].Trim().Split(' ').Select(t => double.Parse(t)).ToArray();
-            }
-
-            return similarityMatrix;
-        }
-
         public async Task PrepareData()
         {
             var (similarityMatrix, ids) = await FindSimilarities();
@@ -192,35 +172,8 @@ namespace Recommendation.Service
                 Directory.CreateDirectory(_options.RecommendationCacheLocation);
             }
 
-            CacheSimilarityMatrix(similarityMatrix);
-            CacheMovieIdArray(ids);
-        }
-
-        private void CacheMovieIdArray(int[] ids)
-        {
-            var idArrayPath = Path.Join(_options.RecommendationCacheLocation, _options.IdArrayFilename);
-            using (StreamWriter file = new StreamWriter(idArrayPath))
-            {
-                file.Write(ids.Aggregate("", (w1, w2) => w1 + " " + w2));
-            }
-        }
-
-        private void CacheSimilarityMatrix(double[,] similarityMatrix)
-        {
-            var similarityMatrixPath = Path.Join(_options.RecommendationCacheLocation, _options.SimilarityMatrixFilename);
-            using (StreamWriter file = new StreamWriter(similarityMatrixPath))
-            {
-                for (int i = 0; i < similarityMatrix.GetLength(0); i++)
-                {
-                    for (int j = 0; j < similarityMatrix.GetLength(1); j++)
-                    {
-                        file.Write(similarityMatrix[i, j] + " ");
-                    }
-
-                    if (i < similarityMatrix.GetLength(0) - 1)
-                        file.Write(file.NewLine);
-                }
-            }
+            _cache.CacheSimilarityMatrix(similarityMatrix);
+            _cache.CacheMovieIdArray(ids);
         }
 
         public async Task<IEnumerable<IEnumerable<string>>> FindDescriptionKeywords()
