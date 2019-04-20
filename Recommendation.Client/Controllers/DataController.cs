@@ -26,15 +26,16 @@ namespace Recommendation.Client.Controllers
             if (full)
                 return await _context.Movies.ToListAsync();
 
-            return await _context.Movies
-                .Select(m => new Movie
-                {
-                    AverageRating = m.AverageRating,
-                    Id = m.Id,
-                    ImageUrl = m.ImageUrl,
-                    Title = m.Title,
-                    Tags = m.Tags
-                }).ToListAsync();
+            var movies = await _context.Movies.Include(m => m.Tags).ToListAsync();
+
+            return movies.Select(m => new Movie
+            {
+                AverageRating = m.AverageRating,
+                Id = m.Id,
+                ImageUrl = m.ImageUrl,
+                Title = m.Title,
+                Tags = m.Tags
+            });
         }
 
         [HttpGet("[action]")]

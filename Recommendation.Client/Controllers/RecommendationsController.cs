@@ -62,7 +62,7 @@ namespace Recommendation.Client.Controllers
             return recommendationResult.Value;
         }
 
-        [HttpPost("status")]
+        [HttpGet("status")]
         public async Task<ActionResult<Database.RecommendationStatus>> CheckStatus(int queuedRecommendationId)
         {
             var host = _configuration["Services:Recommendation:Uri"];

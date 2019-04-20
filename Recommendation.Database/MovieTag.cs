@@ -1,14 +1,9 @@
-﻿using System;
-
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Recommendation.Database
+﻿namespace Recommendation.Database
 {
     public class MovieTag
     {
         public int MovieId { get; set; }
+        [Newtonsoft.Json.JsonIgnore]
         public Movie Movie { get; set; }
 
         public int TagId { get; set; }
