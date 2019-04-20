@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Recommendation.Database;
+using StackExchange.Redis;
 
 namespace Recommendation.Service
 {
@@ -25,8 +26,8 @@ namespace Recommendation.Service
             services.Configure<PythonEngineOptions>(Configuration);
 
             services.AddSingleton(Configuration);
-
-            services.AddSingleton<IQueuedRecommendationStorage>(new QueuedRecommendationStorage());
+            //services.AddSingleton<IQueuedRecommendationStorage>(new QueuedRecommendationStorage());
+            services.AddSingleton<IQueuedRecommendationStorage>(new RedisQueuedRecommendationStorage(Configuration["RedisConnectionString"]));
             services.AddDbContext<DatabaseContext>(options => options.UseSqlServer(Configuration["DatabaseConnectionString"]));
 
             services

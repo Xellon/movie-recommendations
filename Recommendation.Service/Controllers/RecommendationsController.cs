@@ -13,7 +13,7 @@ namespace Recommendation.Service.Controllers
         private readonly IQueuedRecommendationStorage _storage;
         private readonly IQueueHandler _handler;
 
-        public RecommendationsController(IConfiguration configuration, IQueuedRecommendationStorage storage = null, IRecommendationQueue queue = null, IQueueHandler handler = null)
+        public RecommendationsController(IConfiguration configuration, IQueuedRecommendationStorage storage, IRecommendationQueue queue = null, IQueueHandler handler = null)
         {
             _storage = storage;
             _queue = queue is null ? new RecommendationQueue(_storage) : queue;

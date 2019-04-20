@@ -13,7 +13,7 @@ namespace Recommendation.Service
         QueuedRecommendation GetOldestUnstartedRecommendation();
         void SetRecommendationId(int queuedRecommendationId, int recommendationId);
         int GetRecommendationId(int queuedRecommendationId);
-        int QueuedCount { get; }
+        int GetQueuedCount();
     }
 
     public class QueuedRecommendationStorage : IQueuedRecommendationStorage
@@ -98,6 +98,9 @@ namespace Recommendation.Service
             return recommendation.RecommendationId;
         }
 
-        public int QueuedCount => _recommendations.Where(r => r.Status == Database.RecommendationStatus.Queued).Count();
+        public int GetQueuedCount()
+        {
+            return _recommendations.Where(r => r.Status == Database.RecommendationStatus.Queued).Count();
+        }
     }
 }

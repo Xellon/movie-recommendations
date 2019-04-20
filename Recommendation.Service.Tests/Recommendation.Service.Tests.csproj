@@ -30,10 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Integration\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="Python.Runtime">
       <HintPath>..\..\pythonnet\build\lib.win-amd64-3.6\netcoreapp2.0\Python.Runtime.dll</HintPath>
     </Reference>

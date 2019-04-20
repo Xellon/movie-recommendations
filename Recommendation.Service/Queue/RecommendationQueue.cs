@@ -35,6 +35,6 @@ namespace Recommendation.Service
             return _storage.GetOldestUnstartedRecommendation();
         }
 
-        public int QueuedCount => _storage.QueuedCount;
+        public int QueuedCount => _storage.GetQueuedCount();
     }
 }
