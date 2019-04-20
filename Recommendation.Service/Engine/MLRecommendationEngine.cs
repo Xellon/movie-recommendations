@@ -8,11 +8,14 @@ using System.Threading.Tasks;
 
 namespace Recommendation.Service
 {
-    public class RecommendationEngine : IRecommendationEngine
+    /// <summary>
+    /// Recommendation engine based on Microsoft's Machine Learning package
+    /// </summary>
+    public class MLRecommendationEngine : IRecommendationEngine
     {
         private readonly DbContextOptions<Database.DatabaseContext> _dbContextOptions;
 
-        public RecommendationEngine(DbContextOptions<Database.DatabaseContext> dbContextOptions)
+        public MLRecommendationEngine(DbContextOptions<Database.DatabaseContext> dbContextOptions)
         {
             _dbContextOptions = dbContextOptions;
         }
