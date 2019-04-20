@@ -1,10 +1,12 @@
 import * as React from "react";
-import { Button, Chip, CircularProgress, Typography } from "@material-ui/core";
+import { Button, Typography } from "@material-ui/core";
 import * as DB from "../../model/DB";
 import { Utils } from "../../common/Utils";
 import "./RequestMovie.scss";
 import { Authentication } from "../../common/Authentication";
 import { RecommendedMovies } from "../../components/RecommendedMovies";
+import { RecommendationStatusChecker } from "./RecommendationStatusChecker";
+import { TagList } from "./TagList";
 
 enum RequestStatus {
   NotStarted,
@@ -13,31 +15,44 @@ enum RequestStatus {
   Success,
 }
 
+export enum RecommendationStatus {
+  Queued,
+  InProgress,
+  Finished,
+  Stopped,
+  Error,
+  DoesNotExist,
+}
+
 interface State {
   tags: DB.Tag[];
   recommendationId?: number;
   requestStatus: RequestStatus;
-  [index: number]: boolean;
 }
 
 export class RequestMovie extends React.Component<{}, State> {
+  private _selectedTagIds: number[] = [];
+
   public readonly state: State = {
     tags: [],
     requestStatus: RequestStatus.NotStarted,
   };
 
-  private renderTags(state: State) {
-    return state.tags.map(tag => {
-      return (
-        <Chip
-          key={tag.id}
-          className={"requestmovie-chip" + (state[tag.id] ? " selected" : "")}
-          label={tag.text}
-          variant="outlined"
-          // tslint:disable-next-line:jsx-no-lambda
-          onClick={() => this.setState(prevState => ({ [tag.id]: !prevState[tag.id] }))}
-        />);
-    });
+  private async startRecommendationGeneration(userId: string) {
+    const response = await Utils.fetchBackend(
+      `/api/recommendations/generate?userId=${userId}`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(this._selectedTagIds),
+      });
+
+    if (!response.ok)
+      return 0;
+
+    return +response.text();
   }
 
   private _onClickGenerateRecommendations = async () => {
@@ -47,35 +62,36 @@ export class RequestMovie extends React.Component<{}, State> {
 
     this.setState({ requestStatus: RequestStatus.Pending });
 
-    const response = await Utils.fetchBackend(
-      `/api/recommendations/generate?userId=${user.id}`, {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(
-          Object.keys(this.state)
-            .filter(key => !isNaN(+key) && this.state[+key])),
-      });
+    const recommendationId = await this.startRecommendationGeneration(user.id);
 
-    if (!response.ok) {
-      this.setState({ requestStatus: RequestStatus.Error });
-      return;
+    if (!recommendationId) {
+      return this.setState({ requestStatus: RequestStatus.Error });
     }
 
-    this.setState({ recommendationId: +(await response.text()), requestStatus: RequestStatus.Success });
+    this.setState({ recommendationId, requestStatus: RequestStatus.Success });
   }
 
-  public async componentDidMount() {
+  private async queryTags(): Promise<DB.Tag[]> {
     const response = await Utils.fetchBackend("/api/data/tags");
 
     if (!response.ok)
-      return;
+      return [];
 
-    const tags: DB.Tag[] = await response.json();
+    return response.json();
+  }
+
+  public async componentDidMount() {
+    const tags = await this.queryTags();
 
     this.setState({ tags });
+  }
+
+  private _onTagSelected = (tagIds: number[]) => {
+    this._selectedTagIds = tagIds;
+  }
+
+  private _onRecommendationComplete = (status: RecommendationStatus) => {
+    this.setState({ requestStatus: RequestStatus.Success });
   }
 
   public render() {
@@ -91,7 +107,7 @@ export class RequestMovie extends React.Component<{}, State> {
           Select movie genres
         </Typography>
         <div className="requestmovie-chipcontainer">
-          {this.renderTags(this.state)}
+          <TagList tags={this.state.tags} onTagSelected={this._onTagSelected} />
         </div>
         <Button
           className="requestmovie-generatebutton"
@@ -102,8 +118,13 @@ export class RequestMovie extends React.Component<{}, State> {
         >
           Generate recommendations
         </Button>
-        {this.state.requestStatus === RequestStatus.Pending ? <CircularProgress /> : undefined}
-        {this.state.requestStatus === RequestStatus.Error ? "Error generating recommended movies" : undefined}
+        {this.state.requestStatus !== RequestStatus.NotStarted
+          ?
+          <RecommendationStatusChecker
+            onComplete={this._onRecommendationComplete}
+            recommendationId={this.state.recommendationId}
+          />
+          : undefined}
         {this.state.requestStatus === RequestStatus.Success
           ?
           <>
