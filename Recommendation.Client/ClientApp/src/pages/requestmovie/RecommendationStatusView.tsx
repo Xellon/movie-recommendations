@@ -8,6 +8,7 @@ export interface RecommendationStatusViewProps {
 export function RecommendationStatusDisplay(props: RecommendationStatusViewProps) {
   switch (props.status) {
     case RecommendationStatus.DoesNotExist:
+      return <>Failed to start</>;
     case RecommendationStatus.Error:
       return <>Error</>;
     case RecommendationStatus.Finished:

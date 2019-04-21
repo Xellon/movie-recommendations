@@ -28,3 +28,26 @@ button.requestmovie-generatebutton {
     height: 60px;
     width: 80%;
 }
+
+button.requestmovie-stopbutton {
+    margin: 50px auto;
+    display: block;
+    height: 60px;
+    width: 50%;
+}
+
+.requestmovie-block {
+    padding: 20px;
+    margin-bottom: 10px;
+}
+
+.requestmovie-title.requestmovie-title {
+    margin: 30px auto;
+    text-align: center;
+}
+
+.recommendationstatus-checker {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}

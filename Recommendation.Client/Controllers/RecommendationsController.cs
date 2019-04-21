@@ -23,8 +23,13 @@ namespace Recommendation.Client.Controllers
             _client = httpClient;
         }
 
+        private bool IsResultOk<T>(ActionResult<T> result)
+        {
+            return result.Result is null || result.Result.GetType() == typeof(OkResult);
+        }
+
         [HttpPost("[action]")]
-        public async Task<ActionResult<int>> Generate([FromBody]IEnumerable<int> tagIds, string userId)
+        public async Task<ActionResult<int>> QueueRecommendation([FromBody]IEnumerable<int> tagIds, string userId)
         {
             var host = _configuration["Services:Recommendation:Uri"];
             var port = _configuration["Services:Recommendation:Port"];
@@ -35,31 +40,7 @@ namespace Recommendation.Client.Controllers
             if (!result.IsSuccessStatusCode)
                 return BadRequest();
 
-            var queuedRecommendationId = await result.Content.ReadAsAsync<int>();
-
-            var timeoutDate = DateTime.Now + TimeSpan.FromMinutes(10);
-
-            while(true)
-            {
-                if (timeoutDate <= DateTime.Now)
-                    return BadRequest("Recommendation timed out");
-
-                var statusResult = await CheckStatus(queuedRecommendationId);
-
-                if (!(statusResult.Result is null) && statusResult.Result.GetType() != typeof(OkResult))
-                    return BadRequest();
-
-                if (statusResult.Value != Database.RecommendationStatus.InProgress
-                    && statusResult.Value != Database.RecommendationStatus.Queued)
-                    break;
-            }
-
-            var recommendationResult = await GetRecommendationId(queuedRecommendationId);
-
-            if (!(recommendationResult.Result is null) && recommendationResult.Result.GetType() != typeof(OkResult))
-                return BadRequest();
-
-            return recommendationResult.Value;
+            return await result.Content.ReadAsAsync<int>();
         }
 
         [HttpGet("status")]
@@ -94,6 +75,21 @@ namespace Recommendation.Client.Controllers
             var recommendationId = await result.Content.ReadAsAsync<int>();
 
             return recommendationId;
+        }
+
+        [HttpPost("stop")]
+        public async Task<ActionResult> StopRecommendation(int queuedRecommendationId)
+        {
+            var host = _configuration["Services:Recommendation:Uri"];
+            var port = _configuration["Services:Recommendation:Port"];
+            var uri = new Uri($"http://{host}:{port}/api/recommendations/StopRecommendation?queuedRecommendationId={queuedRecommendationId}");
+
+            var result = await _client.PostAsync(uri, null);
+
+            if (!result.IsSuccessStatusCode)
+                return BadRequest();
+
+            return Ok();
         }
     }
 }

@@ -5,20 +5,23 @@ import { RecommendationStatusDisplay } from "./RecommendationStatusView";
 import { RecommendationStatus } from "./RequestMovie";
 
 export interface RecommendationStatusCheckerProps {
-  recommendationId: number;
+  queuedRecommendationId: number;
   onComplete: (status: RecommendationStatus) => void;
 }
 
 export function RecommendationStatusChecker(props: RecommendationStatusCheckerProps) {
   const [status, setStatus] = React.useState(RecommendationStatus.Queued);
-  async function queryRecommendationStatus(recommendationId: number): Promise<RecommendationStatus> {
-    const response = await Utils.fetchBackend(`/api/recommendations/status?queuedRecommendationId=${recommendationId}`);
+
+  async function queryRecommendationStatus(queuedRecommendationId: number): Promise<RecommendationStatus> {
+    const response = await Utils.fetchBackend(
+      `/api/recommendations/status?queuedRecommendationId=${queuedRecommendationId}`);
     if (!response.ok)
       return RecommendationStatus.Error;
-    return +response.text();
+    return +(await response.text());
   }
+
   const updateStatus = async (cancelTimer: () => void) => {
-    const receivedStatus = await queryRecommendationStatus(props.recommendationId);
+    const receivedStatus = await queryRecommendationStatus(props.queuedRecommendationId);
     if (receivedStatus !== RecommendationStatus.InProgress
       && receivedStatus !== RecommendationStatus.Queued) {
       props.onComplete(receivedStatus);
@@ -26,14 +29,16 @@ export function RecommendationStatusChecker(props: RecommendationStatusCheckerPr
     }
     setStatus(receivedStatus);
   };
+
   React.useEffect(() => {
     let cancelationFunc: () => void | null = null;
     const timer = setInterval(() => updateStatus(cancelationFunc), 1000);
     cancelationFunc = () => clearInterval(timer);
     return cancelationFunc;
-  }, []);
+  }, [props.queuedRecommendationId]);
+
   return (
-    <div>
+    <div className="recommendationstatus-checker">
       {status === RecommendationStatus.Queued || status === RecommendationStatus.InProgress
         ?
         <>
