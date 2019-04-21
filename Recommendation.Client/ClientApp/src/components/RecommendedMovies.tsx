@@ -2,15 +2,22 @@ import * as React from "react";
 import { List } from "@material-ui/core";
 import { SuggestedMovie } from "./SuggestedMovie";
 import * as DB from "../model/DB";
-import { Utils } from "../common/Utils";
-import { Authentication } from "../common/Authentication";
+import { BackendQueries } from "../common/BackendQueries";
 
-interface Props {
+interface Movie {
+  id: number;
+  title: string;
+  imageUrl: string;
+  rating: number;
+  tags: string[];
+}
+
+export interface Props {
   recommendationId?: number;
 }
 
 interface State {
-  movies?: Map<number, DB.Movie>;
+  movies?: Map<number, Movie>;
   recommendedMovies?: DB.RecommendedMovie[];
 }
 
@@ -28,48 +35,34 @@ export class RecommendedMovies extends React.PureComponent<Props, State> {
           key={movie.id}
           title={movie.title}
           imageUrl={movie.imageUrl}
-          possibleRating={recommendedMovie.possibleRating}
+          possibleRating={movie.rating}
+          tags={movie.tags}
         />
       );
     });
   }
 
-  private async getMovies(): Promise<DB.Movie[] | undefined> {
-    const response = await Utils.fetchBackend("/api/data/movies");
-
-    if (!response.ok)
-      return undefined;
-
-    return response.json();
-  }
-
-  private async getRecommendedMovies(recommendationId?: number): Promise<DB.RecommendedMovie[] | undefined> {
-    const user = Authentication.getLoggedInUser();
-
-    let response: Response;
-
-    if (recommendationId)
-      response = await Utils.fetchBackend(
-        `/api/data/recommendedmovies/${recommendationId}?userId=${user.id}`);
-    else
-      response = await Utils.fetchBackend(
-        `/api/data/recommendedmovies/latest?userId=${user.id}`);
-
-    if (!response.ok)
-      return undefined;
-
-    return response.json();
-  }
-
   public async componentDidMount() {
-    const recommendedMovies = await this.getRecommendedMovies();
+    const recommendedMovies = await BackendQueries.Movies.queryRecommendedMovies();
+    const dbTags = await BackendQueries.Tags.queryTags();
+    const tags: string[] = [];
+    for (const tag of dbTags) {
+      tags[tag.id] = tag.text;
+    }
 
-    const movieArray = await this.getMovies();
+    const movieArray = await BackendQueries.Movies.queryMovies();
 
-    const movies = new Map<number, DB.Movie>();
+    const movies = new Map<number, Movie>();
 
-    for (const movie of movieArray) {
-      movies.set(movie.id, movie);
+    for (const dbMovie of movieArray) {
+      const movie: Movie = {
+        id: dbMovie.id,
+        imageUrl: dbMovie.imageUrl,
+        rating: dbMovie.averageRating,
+        tags: dbMovie.tags.map(t => tags[t.tagId]),
+        title: dbMovie.title,
+      };
+      movies.set(dbMovie.id, movie);
     }
 
     this.setState({ recommendedMovies, movies });

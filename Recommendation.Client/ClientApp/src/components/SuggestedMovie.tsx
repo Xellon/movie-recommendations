@@ -5,6 +5,7 @@ import { Utils } from "../common/Utils";
 interface Props {
   title: string;
   imageUrl?: string;
+  tags: string[];
   possibleRating: number;
 }
 
@@ -19,8 +20,8 @@ export class SuggestedMovie extends React.PureComponent<Props> {
               : Utils.DEFAULT_MOVIE_IMAGE_URL}
             height={100}
           />
-          <ListItemText secondary={this.props.title}>
-            Title
+          <ListItemText secondary={this.props.tags.reduce((t1, t2) => `${t1}; ${t2}`)}>
+            {this.props.title}
           </ListItemText>
           <ListItemText
             secondary={this.props.possibleRating}
