@@ -76,7 +76,7 @@ namespace Recommendation.Service
             {
                 var queuedRecommendation = _queue.GetUnstartedRecommendation();
 
-                if (queuedRecommendation is null)
+                if (queuedRecommendation is null || _storage.GetRecommendationStatus(queuedRecommendation.Id) != Database.RecommendationStatus.Queued)
                     break;
 
                 _storage.SetRecommendationStatus(queuedRecommendation.Id, Database.RecommendationStatus.InProgress);

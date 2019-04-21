@@ -3,6 +3,7 @@
     public class RecommendedMovie
     {
         public int RecommendationId { get; set; }
+        [Newtonsoft.Json.JsonIgnore]
         public Recommendation Recommendation { get; set; }
 
         public int MovieId { get; set; }

@@ -13,6 +13,13 @@ namespace Recommendation.Service.Tests.Integration
             RequestedTagIds = new List<int> { 1, 2 }
         };
 
+        [ClassInitialize]
+        public static void ClassInitialize(TestContext context)
+        {
+            var storage = new Service.RedisQueuedRecommendationStorage("localhost");
+            storage.FlushDB();
+        }
+
         [TestCleanup]
         public void CleanUp()
         {

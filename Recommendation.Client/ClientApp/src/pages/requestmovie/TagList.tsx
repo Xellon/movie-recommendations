@@ -11,7 +11,7 @@ export function TagList(props: TagListProps) {
   const [selectedTags, setSelectedTags] = React.useState<number[]>([]);
   const onTagClick = (id: number) => {
     const tagId = selectedTags.find(t => t === id);
-    const tagIds = tagId ? selectedTags.map(v => v !== id ? v : undefined) : selectedTags.concat([id]);
+    const tagIds = tagId ? selectedTags.filter(v => v !== id) : selectedTags.concat([id]);
     props.onTagSelected(tagIds);
     setSelectedTags(tagIds);
   };

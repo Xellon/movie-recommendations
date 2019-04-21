@@ -56,24 +56,24 @@ namespace Recommendation.Service
         {
             var context = new Database.DatabaseContext(_dbContextOptions);
 
-            var recommendedMovieIds = await GetRecommendedMovieIds(context, parameters);
+            var recommendedMovieIds = (await GetRecommendedMovieIds(context, parameters));
 
             var recommendation = new Database.Recommendation()
             {
                 Date = DateTime.Now,
                 UserId = parameters.UserId
             };
-            context.Attach(recommendation);
             context.Add(recommendation);
             await context.SaveChangesAsync();
 
             var recommendedMovies = recommendedMovieIds.Select(rm => new Database.RecommendedMovie()
             {
                 RecommendationId = recommendation.Id,
-                MovieId = rm
+                MovieId = rm,
+                PossibleRating = 0.0f,
             });
-            context.Attach(recommendedMovies);
-            context.Add(recommendedMovies);
+
+            context.AddRange(recommendedMovies);
             await context.SaveChangesAsync();
 
             return 0;
