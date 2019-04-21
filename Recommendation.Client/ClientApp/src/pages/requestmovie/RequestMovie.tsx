@@ -1,12 +1,12 @@
 import * as React from "react";
 import { Button, Typography, Paper } from "@material-ui/core";
 import * as DB from "../../model/DB";
-import { Utils } from "../../common/Utils";
 import "./RequestMovie.scss";
 import { Authentication } from "../../common/Authentication";
 import { RecommendedMovies } from "../../components/RecommendedMovies";
 import { RecommendationStatusChecker } from "./RecommendationStatusChecker";
 import { TagList } from "./TagList";
+import { BackendQueries } from "../../common/BackendQueries";
 
 enum RequestStatus {
   NotStarted,
@@ -50,7 +50,7 @@ export class RequestMovie extends React.Component<{}, State> {
       this.setState({ requestStatus: RequestStatus.Success });
 
     if (status === RecommendationStatus.Finished) {
-      BackendQueries.queryRecommendationId(this.state.queuedRecommendationId)
+      BackendQueries.Recommendations.queryRecommendationId(this.state.queuedRecommendationId)
         .then(recommendationId => this.setState({ recommendationId }));
     }
   }
@@ -62,7 +62,8 @@ export class RequestMovie extends React.Component<{}, State> {
 
     this.setState({ requestStatus: RequestStatus.Pending });
 
-    const queuedRecommendationId = await BackendQueries.startRecommendationGeneration(user.id, this._selectedTagIds);
+    const queuedRecommendationId =
+      await BackendQueries.Recommendations.startRecommendationGeneration(user.id, this._selectedTagIds);
 
     if (!queuedRecommendationId)
       return this.setState({ requestStatus: RequestStatus.Error });
@@ -72,11 +73,11 @@ export class RequestMovie extends React.Component<{}, State> {
 
   private _onClickStopRecommendation = async () => {
     this.setState({ requestStatus: RequestStatus.NotStarted });
-    BackendQueries.stopRecommendationGeneration(this.state.queuedRecommendationId);
+    BackendQueries.Recommendations.stopRecommendationGeneration(this.state.queuedRecommendationId);
   }
 
   public async componentDidMount() {
-    const tags = await BackendQueries.queryTags();
+    const tags = await BackendQueries.Tags.queryTags();
 
     this.setState({ tags });
   }
@@ -134,48 +135,3 @@ export class RequestMovie extends React.Component<{}, State> {
     );
   }
 }
-
-const BackendQueries = {
-  queryTags: async (): Promise<DB.Tag[]> => {
-    const response = await Utils.fetchBackend("/api/data/tags");
-
-    if (!response.ok)
-      return [];
-
-    return response.json();
-  },
-
-  queryRecommendationId: async (queuedRecommendationId: number) => {
-    const response = await Utils.fetchBackend(
-      `/api/recommendations/id?queuedRecommendationId=${queuedRecommendationId}`);
-
-    if (!response.ok)
-      return 0;
-
-    return +(await response.text());
-  },
-
-  startRecommendationGeneration: async (userId: string, tagIds: number[]) => {
-    const response = await Utils.fetchBackend(
-      `/api/recommendations/QueueRecommendation?userId=${userId}`, {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(tagIds),
-      });
-
-    if (!response.ok)
-      return 0;
-
-    return +(await response.text());
-  },
-
-  stopRecommendationGeneration: async (queuedRecommendationId: number) => {
-    await Utils.fetchBackend(
-      `/api/recommendations/stop?queuedRecommendationId=${queuedRecommendationId}`, {
-        method: "POST",
-      });
-  },
-};
