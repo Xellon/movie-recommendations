@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <Reference Include="Python.Runtime">
-      <HintPath>..\..\pythonnet\build\lib.win-amd64-3.6\netcoreapp2.0\Python.Runtime.dll</HintPath>
+      <HintPath>.\Packages\Python.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
 
