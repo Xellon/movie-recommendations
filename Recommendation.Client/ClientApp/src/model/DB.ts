@@ -18,9 +18,15 @@ export interface Movie {
   id: number;
   description: string;
   title: string;
-  tags: Tag[];
+  tags: MovieTag[];
   averageRating: number;
   imageUrl?: string;
+}
+
+export interface MovieTag {
+  tagId: number;
+  movieId: number;
+  tag?: Tag;
 }
 
 export interface Tag {
