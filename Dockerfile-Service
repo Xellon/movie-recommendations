@@ -67,15 +67,19 @@ RUN apt-get install python-setuptools -y \
     && pip install setuptools --upgrade \
     && python3 - pip install wheel numpy rake_nltk sklearn pythonnet
 
+# Add python3 to path
+RUN ln -fs /usr/local/bin/python3.6m /usr/bin/python
+
+
 # Build service
 FROM mcr.microsoft.com/dotnet/core/sdk:2.2 AS build
 WORKDIR /src
-# Copy built Python.Runtime.DLL
-COPY --from=python_build /packages /Packages
 
 COPY Recommendation.Database/Recommendation.Database.csproj Recommendation.Database/
 RUN dotnet restore "Recommendation.Database/Recommendation.Database.csproj"
 COPY Recommendation.Service/Recommendation.Service.csproj Recommendation.Service/
+# Copy built Python.Runtime.DLL
+COPY --from=python_build /packages/ Recommendation.Service/Packages/
 RUN dotnet restore "Recommendation.Service/Recommendation.Service.csproj"
 COPY . .
 WORKDIR /src/Recommendation.Service
@@ -88,4 +92,6 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
 
+#CMD export LD_LIBRARY_PATH=/usr/local/bin:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH /usr/local/bin:/usr/local/lib:${LD_LIBRARY_PATH}
 ENTRYPOINT ["dotnet", "Recommendation.Service.dll",  "--environment=Release"]
