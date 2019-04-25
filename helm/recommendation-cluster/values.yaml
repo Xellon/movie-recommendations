@@ -1,0 +1,59 @@
+cluster:
+    name: recommendation-cluster
+    port: 80
+
+recommendation-client:
+    name: recommendation-client
+    image: recommendation-client:latest
+    service:
+        port: 3000
+
+# ----------------------------------------------------
+
+recommendation-service:
+    name: recommendation-service
+    image: recommendation-service:latest
+    service:
+        port: 3010
+
+# ----------------------------------------------------
+
+redis:
+    ## Cluster settings
+    cluster:
+    enabled: false
+
+    ## Use password authentication
+    usePassword: false
+    ## Redis password (both master and slave)
+    ## Defaults to a random 10-character alphanumeric string if not set and usePassword is true
+    ## ref: https://github.com/bitnami/bitnami-docker-redis#setting-the-server-password-on-first-run
+    ##
+    password:
+    ## Use existing secret (ignores previous password)
+    # existingSecret:
+
+    ##
+    ## Redis Master parameters
+    ##
+    master:
+        ## Enable persistence using Persistent Volume Claims
+        ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+        ##
+        persistence:
+            enabled: false
+    ##
+    ## Redis Slave properties
+    ## Note: service.type is a mandatory parameter
+    ## The rest of the parameters are either optional or, if undefined, will inherit those declared in Redis Master
+    ##
+    slave:
+        ## Enable persistence using Persistent Volume Claims
+        ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+        ##
+        persistence:
+            enabled: false
+
+# ----------------------------------------------------
+
+# nginx-ingress:

@@ -1,0 +1,10 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{.Values.name}}-service
+spec:
+  selector:
+    app: {{.Values.name}}
+  ports:
+  - protocol: TCP
+    port: {{.Values.service.port}}
