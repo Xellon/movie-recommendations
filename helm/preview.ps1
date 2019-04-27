@@ -1,2 +1,4 @@
 helm dependency update ./recommendation-cluster
-helm template --output-dir ./generated ./recommendation-cluster
+del ./generated -Recurse -Force
+mkdir ./generated
+helm template --output-dir ./generated --values ./values.yaml ./recommendation-cluster

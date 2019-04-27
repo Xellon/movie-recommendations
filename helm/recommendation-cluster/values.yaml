@@ -1,58 +1,65 @@
-cluster:
-    name: recommendation-cluster
-    port: 80
+cluster: {}
+
 
 recommendation-client:
-    name: recommendation-client
-    image: recommendation-client:latest
-    service:
-        port: 3000
-
+  name: recommendation-client
+  image: xellon/recommendation-client:latest
+  service:
+    port: 3000
+  env:
+    Services__Recommendation__Uri: "recommendation-service-service"
+    Services__Recommendation__Port: "3010"
+    DatabaseConnectionString: "?secret?"
+    TMDB__ApiKey: "?secret?"
 # ----------------------------------------------------
 
 recommendation-service:
-    name: recommendation-service
-    image: recommendation-service:latest
-    service:
-        port: 3010
+  name: recommendation-service
+  image: xellon/recommendation-service:latest
+  service:
+    port: 3010
+  env:
+    DatabaseConnectionString: "?secret?"
+    RedisConnectionString: redis-master
 
 # ----------------------------------------------------
 
 redis:
-    ## Cluster settings
-    cluster:
+  fullnameOverride: redis
+  ## Cluster settings
+  cluster:
     enabled: false
+    slaveCount: 0
+  ## Use password authentication
+  usePassword: false
+  ## Redis password (both master and slave)
+  ## Defaults to a random 10-character alphanumeric string if not set and usePassword is true
+  ## ref: https://github.com/bitnami/bitnami-docker-redis#setting-the-server-password-on-first-run
+  ##
+  password:
+  ## Use existing secret (ignores previous password)
+  # existingSecret:
 
-    ## Use password authentication
-    usePassword: false
-    ## Redis password (both master and slave)
-    ## Defaults to a random 10-character alphanumeric string if not set and usePassword is true
-    ## ref: https://github.com/bitnami/bitnami-docker-redis#setting-the-server-password-on-first-run
+  ##
+  ## Redis Master parameters
+  ##
+  master:
+    ## Enable persistence using Persistent Volume Claims
+    ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
     ##
-    password:
-    ## Use existing secret (ignores previous password)
-    # existingSecret:
-
+    persistence:
+      enabled: false
+  ##
+  ## Redis Slave properties
+  ## Note: service.type is a mandatory parameter
+  ## The rest of the parameters are either optional or, if undefined, will inherit those declared in Redis Master
+  ##
+  slave:
+    ## Enable persistence using Persistent Volume Claims
+    ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
     ##
-    ## Redis Master parameters
-    ##
-    master:
-        ## Enable persistence using Persistent Volume Claims
-        ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
-        ##
-        persistence:
-            enabled: false
-    ##
-    ## Redis Slave properties
-    ## Note: service.type is a mandatory parameter
-    ## The rest of the parameters are either optional or, if undefined, will inherit those declared in Redis Master
-    ##
-    slave:
-        ## Enable persistence using Persistent Volume Claims
-        ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
-        ##
-        persistence:
-            enabled: false
+    persistence:
+      enabled: false
 
 # ----------------------------------------------------
 

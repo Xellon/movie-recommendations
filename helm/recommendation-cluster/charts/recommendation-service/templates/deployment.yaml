@@ -19,3 +19,15 @@ spec:
         image: {{.Values.image}}
         ports:
         - containerPort: 3010
+        env:
+        - name: Logging__LogLevel__Default
+          value: "Information"
+        - name: Logging__LogLevel__System
+          value: "Information"
+        - name: Logging__LogLevel__Microsoft
+          value: "Information"
+          
+        - name: DatabaseConnectionString
+          value: {{quote .Values.env.DatabaseConnectionString}}
+        - name: RedisConnectionString
+          value: {{quote .Values.env.RedisConnectionString}}

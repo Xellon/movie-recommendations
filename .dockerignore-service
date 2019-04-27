@@ -9,4 +9,6 @@ Recommendation.Database/obj
 Recommendation.Service/bin
 Recommendation.Service/obj
 Recommendation.Service/scripts
+Recommendation.Service/.gitignore
+Recommendation.Service/appsettings.*.json
 Recommendation.Service/Packages

@@ -10,5 +10,5 @@ spec:
       paths:
       - path: /
         backend:
-          serviceName: {{.Values.cluster.name}}
-          servicePort: {{.Values.cluster.port}}
+          serviceName: {{index .Values "recommendation-client" "name"}}-service
+          servicePort: {{index .Values "recommendation-client" "service" "port"}}
