@@ -30,7 +30,7 @@ namespace Recommendation.Client.Controllers
         }
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> Everything()
+        public async Task<IActionResult> Everything(int movieCount=1000)
         {
             StatusCodeResult result;
 
@@ -38,7 +38,11 @@ namespace Recommendation.Client.Controllers
             if (result.StatusCode != StatusCodes.Status200OK)
                 return BadRequest();
 
-            result = await Movies();
+            result = await Movies(movieCount);
+            if (result.StatusCode != StatusCodes.Status200OK)
+                return BadRequest();
+
+            result = await MovieCreators();
             if (result.StatusCode != StatusCodes.Status200OK)
                 return BadRequest();
 
@@ -46,7 +50,7 @@ namespace Recommendation.Client.Controllers
         }
 
         [HttpPost("[action]")]
-        public async Task<StatusCodeResult> Movies()
+        public async Task<StatusCodeResult> Movies(int movieCount=1000)
         {
             var discoveredMovies = await RequestDiscoveredMovies(1);
 
@@ -54,10 +58,13 @@ namespace Recommendation.Client.Controllers
 
             var totalPages = discoveredMovies.Total_Pages;
 
-            for (int page = 2; page <= totalPages; page++)
+            var moviesAdded = discoveredMovies.Results.Count();
+            for (int page = 2; page <= totalPages && moviesAdded < movieCount; page++)
             {
                 discoveredMovies = await RequestDiscoveredMovies(page);
                 await SaveMovies(discoveredMovies.Results);
+
+                moviesAdded += discoveredMovies.Results.Count();
 
                 if (page % 40 == 0)
                     await Task.Delay(10000);
@@ -75,7 +82,7 @@ namespace Recommendation.Client.Controllers
                 from mc in mcs.DefaultIfEmpty()
                 where (mc.CreatorId as int?) == null
                 select m.Id
-                );
+                ).Distinct();
 
             {
                 int i = 0;
@@ -283,7 +290,7 @@ namespace Recommendation.Client.Controllers
             public IEnumerable<ProductionCompany> Production_Companies { get; set; }
             public IEnumerable<ProductionCountry> Production_Countries { get; set; }
             public DateTime Release_Date { get; set; }
-            public int Revenue { get; set; }
+            public long Revenue { get; set; }
             public int? Runtime { get; set; }
             public IEnumerable<SpokenLanguage> Spoken_Languages { get; set; }
             public MovieStatus Status { get; set; }
