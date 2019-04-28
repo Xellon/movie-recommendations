@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,13 +27,15 @@ namespace Recommendation.Service
         private readonly IQueuedRecommendationStorage _storage;
         private readonly IRecommendationEngine _recommendationEngine;
         private List<RecommendationTask> _runningTasks;
+        private readonly ILogger _logger;
 
         private static QueueHandler _handlerInstance = null;
 
-        public QueueHandler(DbContextOptions<Database.DatabaseContext> dbContextOptions, IConfiguration configuration, IRecommendationQueue queue, IQueuedRecommendationStorage storage)
+        public QueueHandler(DbContextOptions<Database.DatabaseContext> dbContextOptions, IConfiguration configuration, IRecommendationQueue queue, IQueuedRecommendationStorage storage, ILogger logger = null)
         {
             _queue = queue;
             _storage = storage;
+            _logger = logger;
 
             var engineOptions = configuration.Get<PythonEngineOptions>();
 
@@ -52,10 +55,10 @@ namespace Recommendation.Service
         /// <summary>
         /// Either returns an already created instance or creates a new one. This is needed because mvc controllers are recreated on each request
         /// </summary>
-        public static QueueHandler GetOrCreate(DbContextOptions<Database.DatabaseContext> dbContextOptions, IConfiguration configuration, IRecommendationQueue queue, IQueuedRecommendationStorage storage)
+        public static QueueHandler GetOrCreate(DbContextOptions<Database.DatabaseContext> dbContextOptions, IConfiguration configuration, IRecommendationQueue queue, IQueuedRecommendationStorage storage, ILogger logger = null)
         {
             if(_handlerInstance is null)
-                _handlerInstance = new QueueHandler(dbContextOptions, configuration, queue, storage);
+                _handlerInstance = new QueueHandler(dbContextOptions, configuration, queue, storage, logger);
 
             return _handlerInstance;
         }
@@ -97,6 +100,8 @@ namespace Recommendation.Service
                     _storage.SetRecommendationStatus(task.QueuedRecommendationId, Database.RecommendationStatus.Error);
                     _storage.SetRecommendationId(task.QueuedRecommendationId, 0);
 
+                    _logger.LogInformation(task.Task.Exception, task.Task.Exception.Message);
+                    _logger.LogError(task.Task.Exception.Message);
                     // TODO: Should log the Exception...
                     //throw task.Task.Exception;
                     continue;

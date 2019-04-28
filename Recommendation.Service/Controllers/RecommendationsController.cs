@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Recommendation.Service.Controllers
 {
@@ -13,7 +14,10 @@ namespace Recommendation.Service.Controllers
         private readonly IQueuedRecommendationStorage _storage;
         private readonly IQueueHandler _handler;
 
-        public RecommendationsController(IConfiguration configuration, IQueuedRecommendationStorage storage, IRecommendationQueue queue = null, IQueueHandler handler = null)
+        public RecommendationsController(
+            IConfiguration configuration, IQueuedRecommendationStorage storage,
+            IRecommendationQueue queue = null, IQueueHandler handler = null,
+            ILogger<RecommendationsController> logger = null)
         {
             _storage = storage;
             _queue = queue is null ? new RecommendationQueue(_storage) : queue;
@@ -22,7 +26,7 @@ namespace Recommendation.Service.Controllers
             {
                 var optionsBuilder = new DbContextOptionsBuilder<Database.DatabaseContext>();
                 optionsBuilder.UseSqlServer(configuration["DatabaseConnectionString"]);
-                _handler = QueueHandler.GetOrCreate(optionsBuilder.Options, configuration, _queue, _storage);
+                _handler = QueueHandler.GetOrCreate(optionsBuilder.Options, configuration, _queue, _storage, logger);
             }
             else
                 _handler = handler;

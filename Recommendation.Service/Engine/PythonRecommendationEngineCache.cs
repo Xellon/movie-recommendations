@@ -12,6 +12,9 @@ namespace Recommendation.Service
             _options = options;
         }
 
+        public bool IsPopulated => File.Exists(Path.Join(_options.RecommendationCacheLocation, _options.IdArrayFilename))
+                && File.Exists(Path.Join(_options.RecommendationCacheLocation, _options.SimilarityMatrixFilename));
+
         public int[] RetrieveMovieIdsFromCache()
         {
             var path = Path.Join(_options.RecommendationCacheLocation, _options.IdArrayFilename);

@@ -28,8 +28,10 @@ namespace Recommendation.Service
         private readonly PythonRecommendationEngineCache _cache;
         private IEnumerable<Database.Tag> _tags = null;
 
-        private IEnumerable<Database.Tag> Tags {
-            get {
+        private IEnumerable<Database.Tag> Tags
+        {
+            get
+            {
                 if (_tags is null)
                 {
                     var context = new Database.DatabaseContext(_dbContextOptions);
@@ -79,8 +81,11 @@ namespace Recommendation.Service
             return 0;
         }
 
-        private async Task<IEnumerable<int>> GetRecommendedMovieIds (Database.DatabaseContext context, RecommendationParameters parameters)
+        private async Task<IEnumerable<int>> GetRecommendedMovieIds(Database.DatabaseContext context, RecommendationParameters parameters)
         {
+            if (!_cache.IsPopulated)
+                await PrepareData();
+
             var movieIds = _cache.RetrieveMovieIdsFromCache();
             var similarityMatrix = _cache.RetrieveSimilarityMatrixFromCache(movieIds);
 
@@ -186,7 +191,7 @@ namespace Recommendation.Service
             return await PythonMethods.FindKeywords(movieDescriptions);
         }
 
-        public async Task<(double[,] similarityMatrix, int[] ids)>  FindSimilarities()
+        public async Task<(double[,] similarityMatrix, int[] ids)> FindSimilarities()
         {
             var context = new Database.DatabaseContext(_dbContextOptions);
             var movies = await context.Movies.Include(m => m.Tags).ToListAsync();
@@ -236,7 +241,7 @@ namespace Recommendation.Service
                     {
                         descriptions[i, j] = 1;
                         entries++;
-                    }      
+                    }
                 }
 
                 var entryPercentage = (entries / (float)totalEntries) * 100;
@@ -264,7 +269,7 @@ namespace Recommendation.Service
         private double NormalizeAverageRating(double rating, float weight = 1.0f)
         {
             // Rating normalized to be [0;1]
-            return (rating / 10.0f ) * weight;
+            return (rating / 10.0f) * weight;
         }
 
         private double NormalizeYear(int year, float weight = 1.0f)
