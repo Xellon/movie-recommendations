@@ -18,7 +18,7 @@ spec:
       - name: {{.Values.name}}
         image: {{.Values.image}}
         ports:
-        - containerPort: 3010
+        - containerPort: {{.Values.container.port}}
         env:
         - name: Logging__LogLevel__Default
           value: "Information"

@@ -4,6 +4,8 @@ metadata:
   name: cluster-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    kubernetes.io/ingress.allow-http: "true"
 spec:
   rules:
   - http:

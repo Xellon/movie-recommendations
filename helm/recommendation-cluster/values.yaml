@@ -6,6 +6,8 @@ recommendation-client:
   image: xellon/recommendation-client:latest
   service:
     port: 3000
+  container:
+    port: 4000
   env:
     Services__Recommendation__Uri: "recommendation-service-service"
     Services__Recommendation__Port: "3010"
@@ -17,6 +19,8 @@ recommendation-service:
   name: recommendation-service
   image: xellon/recommendation-service:latest
   service:
+    port: 3010
+  container:
     port: 3010
   env:
     DatabaseConnectionString: "?secret?"

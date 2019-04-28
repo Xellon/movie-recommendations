@@ -1,7 +1,7 @@
 // tslint:disable-next-line:no-implicit-dependencies
 import { History } from "history";
 
-const backendUrl = "http://localhost:4000";
+const backendUrl = location.protocol + "//" + location.host;
 
 function fetchBackend(path: string, options?: RequestInit) {
     const url = backendUrl + path;

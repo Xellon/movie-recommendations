@@ -19,7 +19,7 @@ spec:
         image: {{.Values.image}}
         pullstrategy:
         ports:
-        - containerPort: 4000
+        - containerPort: {{.Values.container.port}}
         env:
         - name: Logging__LogLevel__Default
           value: "Information"
