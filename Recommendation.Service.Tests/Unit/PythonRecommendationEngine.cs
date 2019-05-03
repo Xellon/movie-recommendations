@@ -70,7 +70,7 @@ namespace Recommendation.Service.Tests.Unit
         }
 
         [TestMethod]
-        public async Task FindDescriptionKeywords()
+        public async Task FindDescriptionKeywords_RegularText_FiltersOutIrrelevantWords()
         {
             (var contextOptions, var context) = PrepareDatabaseAndOptions();
 
@@ -83,7 +83,7 @@ namespace Recommendation.Service.Tests.Unit
         }
 
         [TestMethod]
-        public async Task FindSimilarities()
+        public async Task FindSimilarities_FourMovies_GeneratesCorrectSimilarityMatrix()
         {
             var contextOptions = PrepareDatabaseOptions();
 
@@ -138,11 +138,18 @@ namespace Recommendation.Service.Tests.Unit
             context.SaveChanges();
 
             var engine = new Service.PythonRecommendationEngine(contextOptions, _engineOptions);
-            var similaritiesMatrix = await engine.FindSimilarities();
+            var (similaritiesMatrix, ids) = await engine.FindSimilarities();
+
+            var similarityMatrixString = JsonConvert.SerializeObject(similaritiesMatrix);
+            var idsString = JsonConvert.SerializeObject(ids);
+            Assert.AreEqual(
+                "[[1.0,0.85032982259575962,0.66852235756773826,0.584021194957838],[0.85032982259575962,1.0,0.298883133547568,0.1917974265929025],[0.66852235756773826,0.298883133547568,1.0000000000000002,0.88871006494571314],[0.584021194957838,0.1917974265929025,0.88871006494571314,1.0000000000000002]]", 
+                similarityMatrixString);
+            Assert.AreEqual("[1,2,3,4]", idsString);
         }
 
         [TestMethod]
-        public void CreateMovieMatrix()
+        public void CreateMovieMatrix_TwoMovies_VectorizesMovieAttributesCorrectly()
         {
             var contextOptions = PrepareDatabaseOptions();
 

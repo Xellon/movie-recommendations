@@ -21,7 +21,7 @@ namespace Recommendation.Service.Tests.Unit
         }
 
         [TestMethod]
-        public async Task FindKeywords()
+        public async Task FindKeywords_RegularText_FiltersOutIrrelevantWords()
         {
             var descriptions = new List<string> { "Hello and welcome to Jackass", "Welcome to hype machine" };
 
@@ -49,7 +49,7 @@ namespace Recommendation.Service.Tests.Unit
         }
 
         [TestMethod]
-        public async Task VectorizeDocuments()
+        public async Task VectorizeDocuments_ThreeSentences_VectorizesWordsCorrectly()
         {
             var documents = new string[]
             {

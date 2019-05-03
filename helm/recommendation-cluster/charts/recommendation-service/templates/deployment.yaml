@@ -21,7 +21,7 @@ spec:
         - containerPort: {{.Values.container.port}}
         env:
         - name: Logging__LogLevel__Default
-          value: "Information"
+          value: "Debug"
         - name: Logging__LogLevel__System
           value: "Information"
         - name: Logging__LogLevel__Microsoft

@@ -78,12 +78,12 @@ namespace Recommendation.Service
 
                     PyList cosineSimilarity = PyList.AsList(cosineSimilarityObj);
 
-                    return ConvertSimilarityListToManaged(cosineSimilarity);
+                    return ConvertSimilarityPythonListToArray(cosineSimilarity);
                 }
             });
         }
 
-        private static double[,] ConvertSimilarityListToManaged(PyList similarityList)
+        private static double[,] ConvertSimilarityPythonListToArray(PyList similarityList)
         {
             var length = similarityList.Length();
             var similarities = new double[length, length];
