@@ -181,15 +181,6 @@ namespace Recommendation.Service
             _cache.CacheMovieIdArray(ids);
         }
 
-        public async Task<IEnumerable<IEnumerable<string>>> FindDescriptionKeywords()
-        {
-            var context = new Database.DatabaseContext(_dbContextOptions);
-            var movieDescriptions = await context.Movies
-                .Select(m => m.Description == null ? "" : m.Description.ToLower())
-                .ToListAsync();
-
-            return await PythonMethods.FindKeywords(movieDescriptions);
-        }
 
         public async Task<(double[,] similarityMatrix, int[] ids)> FindSimilarities()
         {

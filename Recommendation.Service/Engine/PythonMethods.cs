@@ -7,55 +7,6 @@ namespace Recommendation.Service
 {
     public static class PythonMethods
     {
-        public static Task<IEnumerable<string[]>> FindKeywords(IEnumerable<string> descriptions)
-        {
-            return Task.Run(() => 
-            {
-                var keywords = new List<string[]>();
-                using (Py.GIL())
-                {
-                    dynamic rake_nltk = Py.Import("rake_nltk");
-
-                    foreach (var description in descriptions)
-                    {
-                        dynamic rake = rake_nltk.Rake();
-                        rake.extract_keywords_from_text(description);
-                        PyList keys = PyList.AsList(rake.get_word_degrees().keys());
-                        keywords.Add((string[])keys.AsManagedObject(typeof(string[])));
-                    }
-                }
-
-                return keywords.AsEnumerable();
-            });
-        }
-
-        public static Task<long[,]> VectorizeDocuments(IEnumerable<string> documents)
-        {
-            return Task.Run(() => 
-            {
-                try
-                {
-                    using (Py.GIL())
-                    {
-                        dynamic sklear_feature_extraction_text = Py.Import("sklearn.feature_extraction.text");
-                        dynamic countVectorizer = sklear_feature_extraction_text.CountVectorizer();
-
-                        dynamic countMatrixObject = countVectorizer.fit_transform(documents);
-                        PyList countMatrix = PyList.AsList(countMatrixObject.toarray());
-                        var matrix = (long[][])countMatrix.AsManagedObject(typeof(long[][]));
-
-                        return ConvertMatrix(matrix);
-                    }
-                }
-                catch(PythonException e)
-                {
-                    if (e.Message.Contains("empty vocabulary"))
-                        return new long[0, 0];
-                    else
-                        throw e;
-                }
-            });
-        }
         public static Task<double[,]> VectorizeDocumentsTFIDF(IEnumerable<string> documents)
         {
             return Task.Run(() =>

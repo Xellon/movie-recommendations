@@ -70,19 +70,6 @@ namespace Recommendation.Service.Tests.Unit
         }
 
         [TestMethod]
-        public async Task FindDescriptionKeywords_RegularText_FiltersOutIrrelevantWords()
-        {
-            (var contextOptions, var context) = PrepareDatabaseAndOptions();
-
-            var engine = new Service.PythonRecommendationEngine(contextOptions, _engineOptions);
-            var keywordLists = (await engine.FindDescriptionKeywords()).Select(keywords => keywords.OrderBy(word => word));
-
-            var serializedKeywordLists = JsonConvert.SerializeObject(keywordLists);
-
-            Assert.AreEqual("[[\"hello\",\"jackass\",\"welcome\"],[\"hype\",\"machine\",\"welcome\"]]", serializedKeywordLists);
-        }
-
-        [TestMethod]
         public async Task FindSimilarities_FourMovies_GeneratesCorrectSimilarityMatrix()
         {
             var contextOptions = PrepareDatabaseOptions();

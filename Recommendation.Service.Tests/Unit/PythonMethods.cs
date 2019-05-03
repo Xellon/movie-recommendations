@@ -21,18 +21,6 @@ namespace Recommendation.Service.Tests.Unit
         }
 
         [TestMethod]
-        public async Task FindKeywords_RegularText_FiltersOutIrrelevantWords()
-        {
-            var descriptions = new List<string> { "Hello and welcome to Jackass", "Welcome to hype machine" };
-
-            var keywordLists = (await Service.PythonMethods.FindKeywords(descriptions)).Select(keywords => keywords.OrderBy(word => word));
-
-            var serializedKeywordLists = JsonConvert.SerializeObject(keywordLists);
-
-            Assert.AreEqual("[[\"hello\",\"jackass\",\"welcome\"],[\"hype\",\"machine\",\"welcome\"]]", serializedKeywordLists);
-        }
-
-        [TestMethod]
         public async Task FindSimilarities_SameVectors_ReturnsCorrectMatrix()
         {
             var similarityMatrix = await Service.PythonMethods.FindSimilarities("0 1; 0 1");
@@ -46,23 +34,6 @@ namespace Recommendation.Service.Tests.Unit
             var similarityMatrix = await Service.PythonMethods.FindSimilarities("0 1; 1 0");
             var serializedMatrix = JsonConvert.SerializeObject(similarityMatrix);
             Assert.AreEqual("[[1.0,0.0],[0.0,1.0]]", serializedMatrix);
-        }
-
-        [TestMethod]
-        public async Task VectorizeDocuments_ThreeSentences_VectorizesWordsCorrectly()
-        {
-            var documents = new string[]
-            {
-                "arm beard cinnamon",
-                "beard cinnamon",
-                "arm cinnamon"
-            };
-
-            var matrix = await Service.PythonMethods.VectorizeDocuments(documents);
-
-            var stringifiedMatrix = JsonConvert.SerializeObject(matrix);
-
-            Assert.AreEqual("[[1,1,1],[0,1,1],[1,0,1]]", stringifiedMatrix);
         }
 
         [TestMethod]
