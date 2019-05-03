@@ -39,7 +39,6 @@ namespace Recommendation.Service
                     {
                         dynamic sklear_feature_extraction_text = Py.Import("sklearn.feature_extraction.text");
                         dynamic countVectorizer = sklear_feature_extraction_text.CountVectorizer();
-                        dynamic np = Py.Import("numpy");
 
                         dynamic countMatrixObject = countVectorizer.fit_transform(documents);
                         PyList countMatrix = PyList.AsList(countMatrixObject.toarray());
@@ -57,7 +56,33 @@ namespace Recommendation.Service
                 }
             });
         }
+        public static Task<double[,]> VectorizeDocumentsTFIDF(IEnumerable<string> documents)
+        {
+            return Task.Run(() =>
+            {
+                try
+                {
+                    using (Py.GIL())
+                    {
+                        dynamic sklear_feature_extraction_text = Py.Import("sklearn.feature_extraction.text");
+                        dynamic tfidfVectorizer = sklear_feature_extraction_text.TfidfVectorizer();
 
+                        dynamic countMatrixObject = tfidfVectorizer.fit_transform(documents);
+                        PyList countMatrix = PyList.AsList(countMatrixObject.toarray());
+                        var matrix = (double[][])countMatrix.AsManagedObject(typeof(double[][]));
+
+                        return ConvertMatrix(matrix);
+                    }
+                }
+                catch (PythonException e)
+                {
+                    if (e.Message.Contains("NoneType"))
+                        return new double[0, 0];
+                    else
+                        throw e;
+                }
+            });
+        }
         public static Task<double[,]> FindSimilarities(string stringifiedMatrix)
         {
             return Task.Run(() => 

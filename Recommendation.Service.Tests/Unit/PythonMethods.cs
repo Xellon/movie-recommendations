@@ -64,5 +64,24 @@ namespace Recommendation.Service.Tests.Unit
 
             Assert.AreEqual("[[1,1,1],[0,1,1],[1,0,1]]", stringifiedMatrix);
         }
+
+        [TestMethod]
+        public async Task VectorizeDocumentsTFIDF_ThreeSentences_VectorizesWordsCorrectly()
+        {
+            var documents = new string[]
+            {
+                "What's an arm beard cinnamon?",
+                "Here's beard cinnamon.",
+                "Arm, cinnamon!"
+            };
+
+            var matrix = await Service.PythonMethods.VectorizeDocumentsTFIDF(documents);
+
+            var stringifiedMatrix = JsonConvert.SerializeObject(matrix);
+
+            Assert.AreEqual(
+                "[[0.53409337494358344,0.40619177814339469,0.40619177814339469,0.31544415103177975,0.0,0.53409337494358344],[0.0,0.0,0.54783215492743631,0.4254405389711991,0.72033344905498931,0.0],[0.0,0.78980692906609051,0.0,0.6133555370249717,0.0,0.0]]", 
+                stringifiedMatrix);
+        }
     }
 }

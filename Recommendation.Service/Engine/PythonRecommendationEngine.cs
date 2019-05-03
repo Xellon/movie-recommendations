@@ -196,11 +196,10 @@ namespace Recommendation.Service
             var context = new Database.DatabaseContext(_dbContextOptions);
             var movies = await context.Movies.Include(m => m.Tags).ToListAsync();
 
-            var descriptionKeywords = await FindDescriptionKeywords();
-            var descriptionData = descriptionKeywords.Select(d => d.Aggregate("", (w1, w2) => w1 + " " + w2));
+            var descriptions = await context.Movies.Select(m => m.Description).ToListAsync();
 
-            var descriptionMatrix = await VectorizeDescriptions(descriptionData);
-            var movieMatrix = CreateMovieMatrix(movies);
+            var descriptionMatrix = await VectorizeDescriptions(descriptions, weight: 0.4f);
+            var movieMatrix = CreateMovieMatrix(movies, weight: 0.6f);
 
             var joinedMatrix = Matrix.JoinMatrices(movieMatrix, Matrix.CastMatrix(descriptionMatrix));
 
@@ -220,31 +219,34 @@ namespace Recommendation.Service
             return await VectorizeDescriptions(descriptions);
         }
 
-        public async Task<long[,]> VectorizeDescriptions(IEnumerable<string> descriptions)
+        public async Task<long[,]> VectorizeDescriptions(IEnumerable<string> descriptions, float weight = 1.0f)
         {
-            var vectorizedDescriptions = await PythonMethods.VectorizeDocuments(descriptions);
+            var vectorizedDescriptions = await PythonMethods.VectorizeDocumentsTFIDF(descriptions);
 
-            return FilterVectorizedDescriptions(vectorizedDescriptions, 5, 90);
+            return FilterVectorizedDescriptions(vectorizedDescriptions, weight, 0, 60);
         }
 
-        private long[,] FilterVectorizedDescriptions(long[,] descriptions, float lowerPercentage, float upperPercentage)
+        private long[,] FilterVectorizedDescriptions(double[,] descriptions, float weight = 1.0f, float lowerPercentage = 0.0f, float upperPercentage = 100.0f)
         {
             var markedColumns = new List<int>();
             var totalEntries = descriptions.GetLength(0);
+            var localWeight = (1.0f / descriptions.GetLength(1)) * weight;
+
             for (int j = 0; j < descriptions.GetLength(1); j++)
             {
                 var entries = 0;
-
+                double sum = 0;
                 for (int i = 0; i < totalEntries; i++)
                 {
                     if (descriptions[i, j] > 0)
                     {
-                        descriptions[i, j] = 1;
+                        sum += descriptions[i, j];
+                        descriptions[i, j] = localWeight;
                         entries++;
                     }
                 }
 
-                var entryPercentage = (entries / (float)totalEntries) * 100;
+                var entryPercentage = (1 - (sum / entries)) * 100;
                 if (lowerPercentage <= entryPercentage && entryPercentage <= upperPercentage)
                 {
                     markedColumns.Add(j);
@@ -258,7 +260,7 @@ namespace Recommendation.Service
             {
                 for (int rowIndex = 0; rowIndex < totalEntries; rowIndex++)
                 {
-                    newDescriptions[rowIndex, index] = descriptions[rowIndex, columnIndex];
+                    newDescriptions[rowIndex, index] = (long)descriptions[rowIndex, columnIndex];
                 }
                 index++;
             }
@@ -278,18 +280,21 @@ namespace Recommendation.Service
             return ((DateTime.Now.Year - year) / 50.0f) * weight;
         }
 
-        public double[,] CreateMovieMatrix(IEnumerable<Database.Movie> movies)
+        public double[,] CreateMovieMatrix(IEnumerable<Database.Movie> movies, float weight = 1.0f)
         {
             var matrix = new double[movies.Count(), 2];
+            float ratingWeight = weight * 0.33f;
+            float yearWeight = weight * 0.33f;
+            float tagWeight = weight * 0.34f;
 
             for (int i = 0; i < movies.Count(); i++)
             {
                 var movie = movies.ElementAt(i);
-                matrix[i, 0] = NormalizeAverageRating(movie.AverageRating);
-                matrix[i, 1] = NormalizeYear(movie.Date.Year);
+                matrix[i, 0] = NormalizeAverageRating(movie.AverageRating, ratingWeight);
+                matrix[i, 1] = NormalizeYear(movie.Date.Year, yearWeight);
             }
 
-            var tagMatrix = CreateTagMatrix(movies);
+            var tagMatrix = CreateTagMatrix(movies, tagWeight);
 
             return Matrix.JoinMatrices(matrix, tagMatrix);
         }
@@ -299,6 +304,7 @@ namespace Recommendation.Service
             var rowCount = movies.Count();
             var columnCount = Tags.Count();
             var matrix = new double[movies.Count(), Tags.Count()];
+            var localWeight = (1.0f / Tags.Count()) * weight;
 
             for (int i = 0; i < rowCount; i++)
             {
@@ -312,7 +318,7 @@ namespace Recommendation.Service
                 for (int j = 0; j < columnCount; j++)
                 {
                     var tagId = tagsIds[j];
-                    matrix[i, j] = movie.Tags.FirstOrDefault(mt => mt.TagId == tagId) is null ? 0 : weight;
+                    matrix[i, j] = movie.Tags.FirstOrDefault(mt => mt.TagId == tagId) is null ? 0 : localWeight;
                 }
             }
 
