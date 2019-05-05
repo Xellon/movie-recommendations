@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text;
 
 namespace Recommendation.Service
 {
@@ -6,23 +7,24 @@ namespace Recommendation.Service
     {
         public static string MatrixToString(double[,] matrix)
         {
-            var matrixString = "";
+            var builder = new StringBuilder();
+            var cultureInfo = new CultureInfo("en-US");
 
             for (int i = 0; i < matrix.GetLength(0); i++)
             {
                 for (int j = 0; j < matrix.GetLength(1); j++)
                 {
-                    matrixString += matrix[i, j].ToString(new CultureInfo("en-US"));
+                    builder.AppendFormat(cultureInfo, "{0}", matrix[i, j]);
 
                     if (j < matrix.GetLength(1) - 1)
-                        matrixString += " ";
+                        builder.Append(" ");
                 }
 
                 if (i < matrix.GetLength(0) - 1)
-                    matrixString += ";";
+                    builder.Append(";");
             }
 
-            return matrixString;
+            return builder.ToString();
         }
 
         public static double[,] JoinMatrices(double[,] m1, double[,] m2)
@@ -54,20 +56,6 @@ namespace Recommendation.Service
             }
 
             return matrix;
-        }
-
-        public static double[,] CastMatrix(long[,] matrix)
-        {
-            var newMatrix = new double[matrix.GetLength(0), matrix.GetLength(1)];
-
-            for (int i = 0; i < newMatrix.GetLength(0); i++)
-            {
-                for (int j = 0; j < newMatrix.GetLength(1); j++)
-                {
-                    newMatrix[i, j] = (double)matrix[i, j];
-                }
-            }
-            return newMatrix;
         }
     }
 }
