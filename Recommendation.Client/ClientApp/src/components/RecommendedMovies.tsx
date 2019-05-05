@@ -1,5 +1,5 @@
 import * as React from "react";
-import { List } from "@material-ui/core";
+import { List, CircularProgress } from "@material-ui/core";
 import { SuggestedMovie } from "./SuggestedMovie";
 import * as DB from "../model/DB";
 import { BackendQueries } from "../common/BackendQueries";
@@ -71,6 +71,7 @@ export class RecommendedMovies extends React.PureComponent<Props, State> {
   public render() {
     return (
       <List>
+        {!this.state.recommendedMovies ? <CircularProgress /> : undefined}
         {this.renderMovies()}
       </List>
     );
