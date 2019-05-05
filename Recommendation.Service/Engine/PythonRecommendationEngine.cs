@@ -17,10 +17,22 @@ namespace Recommendation.Service
 
     public class PythonRecommendationEngine : IRecommendationEngine
     {
+        struct UserMovie
+        {
+            public int Id { get; set; }
+            public float Rating { get; set; }
+        }
+
         struct SimilarityObject
         {
             public int Index { get; set; }
             public double Similarity { get; set; }
+        }
+        class SimilarityObjectComparer : IEqualityComparer<SimilarityObject>
+        {
+            public bool Equals(SimilarityObject x, SimilarityObject y) => x.Index == y.Index;
+
+            public int GetHashCode(SimilarityObject obj) => obj.GetHashCode();
         }
 
         private readonly DbContextOptions<Database.DatabaseContext> _dbContextOptions;
@@ -58,7 +70,7 @@ namespace Recommendation.Service
         {
             var context = new Database.DatabaseContext(_dbContextOptions);
 
-            var recommendedMovieIds = (await GetRecommendedMovieIds(context, parameters));
+            var recommendedMovieIds = await GetRecommendedMovieIds(context, parameters);
 
             var recommendation = new Database.Recommendation()
             {
@@ -95,18 +107,18 @@ namespace Recommendation.Service
             var userMovies = context.UserMovies.Include(um => um.Movie.Tags)
                 .Where(um => um.UserId == parameters.UserId
                     && DoesMovieContainTags(um.Movie.Tags.Select(t => t.TagId), parameters.RequestedTagIds))
-                .Select(um => new { Id = um.MovieId, Rating = um.Rating });
+                .Select(um => new UserMovie{ Id = um.MovieId, Rating = um.Rating });
 
             // Fill user movies up if there are not enough of them
             var allMovies = movies
                 .Where(m => DoesMovieContainTags(m.Tags.Select(t => t.TagId), parameters.RequestedTagIds))
                 .OrderByDescending(m => m.AverageRating)
-                .Select(m => new { Id = m.Id, Rating = (float)m.AverageRating })
+                .Select(m => new UserMovie{ Id = m.Id, Rating = (float)m.AverageRating })
                 .Take(Math.Max(0, 10 - userMovies.Count()))
                 .Union(userMovies);
 
-            // Limit matrix to only include requested tags
-            var isSimilarityAllowedFilters = CreateSimilarityMatrixFilter(similarityMatrix, movieIds, movies, parameters);
+            // Limit matrix to only include requested tags and exclude user movies
+            var isSimilarityAllowedFilters = CreateSimilarityMatrixFilter(similarityMatrix, movieIds, movies, parameters, userMovies);
 
             // Gather the most similar movies
             var allSimilarities = new List<SimilarityObject>();
@@ -124,23 +136,27 @@ namespace Recommendation.Service
                 allSimilarities.AddRange(similarities);
             }
 
+            var equalityComparer = new SimilarityObjectComparer();
+
             // Get top recommended movie ids
             var userMoviesIds = userMovies.Select(um => um.Id);
             return allSimilarities
+                .Distinct(equalityComparer)
                 .Where(id => !userMoviesIds.Contains(id.Index))
                 .OrderByDescending(s => s.Similarity)
                 .Take(10)
                 .Select(s => movieIds[s.Index]);
         }
 
-        private bool[] CreateSimilarityMatrixFilter(double[][] similarityMatrix, int[] movieIds, IEnumerable<Database.Movie> movies, RecommendationParameters parameters)
+        private bool[] CreateSimilarityMatrixFilter(double[][] similarityMatrix, int[] movieIds, IEnumerable<Database.Movie> movies, RecommendationParameters parameters, IEnumerable<UserMovie> userMovies)
         {
             var isSimilarityAllowedFilters = new bool[similarityMatrix.GetLength(0)];
+            var userMovieIds = userMovies.Select(um => um.Id);
             for (int i = 0; i < movieIds.Length; i++)
             {
                 var movieTagIds = movies.First(m => m.Id == movieIds[i]).Tags.Select(t => t.TagId);
 
-                isSimilarityAllowedFilters[i] = DoesMovieContainTags(movieTagIds, parameters.RequestedTagIds);
+                isSimilarityAllowedFilters[i] = DoesMovieContainTags(movieTagIds, parameters.RequestedTagIds) && !userMovieIds.Contains(movieIds[i]);
             }
             return isSimilarityAllowedFilters;
         }
@@ -192,7 +208,7 @@ namespace Recommendation.Service
             var descriptionMatrix = await VectorizeDescriptions(descriptions, weight: 0.4f);
             var movieMatrix = CreateMovieMatrix(movies, weight: 0.6f);
 
-            var joinedMatrix = Matrix.JoinMatrices(movieMatrix, Matrix.CastMatrix(descriptionMatrix));
+            var joinedMatrix = Matrix.JoinMatrices(movieMatrix, descriptionMatrix);
 
             var stringifiedMatrix = Matrix.MatrixToString(joinedMatrix);
 
@@ -202,7 +218,7 @@ namespace Recommendation.Service
             return (similarityMatrix, ids);
         }
 
-        public async Task<long[,]> VectorizeDescriptions()
+        public async Task<double[,]> VectorizeDescriptions()
         {
             var context = new Database.DatabaseContext(_dbContextOptions);
             var descriptions = await context.Movies.Select(m => m.Description).ToListAsync();
@@ -210,14 +226,14 @@ namespace Recommendation.Service
             return await VectorizeDescriptions(descriptions);
         }
 
-        public async Task<long[,]> VectorizeDescriptions(IEnumerable<string> descriptions, float weight = 1.0f)
+        public async Task<double[,]> VectorizeDescriptions(IEnumerable<string> descriptions, float weight = 1.0f)
         {
             var vectorizedDescriptions = await PythonMethods.VectorizeDocumentsTFIDF(descriptions);
 
-            return FilterVectorizedDescriptions(vectorizedDescriptions, weight, 0, 60);
+            return FilterVectorizedDescriptions(vectorizedDescriptions, weight, 20);
         }
 
-        private long[,] FilterVectorizedDescriptions(double[,] descriptions, float weight = 1.0f, float lowerPercentage = 0.0f, float upperPercentage = 100.0f)
+        private double[,] FilterVectorizedDescriptions(double[,] descriptions, float weight = 1.0f, float cutOffPercentage = 50.0f)
         {
             var markedColumns = new List<int>();
             var totalEntries = descriptions.GetLength(0);
@@ -237,21 +253,21 @@ namespace Recommendation.Service
                     }
                 }
 
-                var entryPercentage = (1 - (sum / entries)) * 100;
-                if (lowerPercentage <= entryPercentage && entryPercentage <= upperPercentage)
+                var entryPercentage = (sum / entries) * 100;
+                if (cutOffPercentage <= entryPercentage && entries > 1)
                 {
                     markedColumns.Add(j);
                 }
             }
 
-            var newDescriptions = new long[totalEntries, markedColumns.Count];
+            var newDescriptions = new double[totalEntries, markedColumns.Count];
 
             int index = 0;
             foreach (var columnIndex in markedColumns)
             {
                 for (int rowIndex = 0; rowIndex < totalEntries; rowIndex++)
                 {
-                    newDescriptions[rowIndex, index] = (long)descriptions[rowIndex, columnIndex];
+                    newDescriptions[rowIndex, index] = descriptions[rowIndex, columnIndex];
                 }
                 index++;
             }
@@ -296,6 +312,7 @@ namespace Recommendation.Service
             var columnCount = Tags.Count();
             var matrix = new double[movies.Count(), Tags.Count()];
             var localWeight = (1.0f / Tags.Count()) * weight;
+            var tagsIds = Tags.Select(t => t.Id).ToArray();
 
             for (int i = 0; i < rowCount; i++)
             {
@@ -304,12 +321,9 @@ namespace Recommendation.Service
                 if (movie.Tags is null)
                     continue;
 
-                var tagsIds = Tags.Select(t => t.Id).ToArray();
-
                 for (int j = 0; j < columnCount; j++)
                 {
-                    var tagId = tagsIds[j];
-                    matrix[i, j] = movie.Tags.FirstOrDefault(mt => mt.TagId == tagId) is null ? 0 : localWeight;
+                    matrix[i, j] = movie.Tags.FirstOrDefault(mt => mt.TagId == tagsIds[j]) is null ? 0 : localWeight;
                 }
             }
 
