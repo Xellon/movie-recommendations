@@ -124,7 +124,7 @@ namespace Recommendation.Service
                     .Select((s, index) => new SimilarityObject { Similarity = s * (userMovie.Rating / 10), Index = index })
                     .Where(s => isSimilarityAllowedFilters[s.Index])
                     .OrderByDescending(s => s.Similarity)
-                    .Take(5);
+                    .Take(RecommendedMovieLimit);
 
                 allSimilarities.AddRange(similarities);
             }
@@ -162,13 +162,14 @@ namespace Recommendation.Service
         {
             var movies = context.Movies.Include(m => m.Tags).ToArray();
             var isSimilarityAllowedFilters = new bool[similarityMatrix.GetLength(0)];
-            var userMovieIds = userMovies.Select(um => um.Id);
+            var userMovieIds = userMovies.Select(um => um.Id).ToHashSet();
 
             for (int i = 0; i < movieIds.Length; i++)
             {
-                var movie = movies.First(m => m.Id == movieIds[i]);
+                var movieId = movieIds[i];
+                var movie = movies.First(m => m.Id == movieId);
 
-                isSimilarityAllowedFilters[i] = DoesMovieContainTags(movie, parameters.RequestedTagIds) && !userMovieIds.Contains(movieIds[i]);
+                isSimilarityAllowedFilters[i] = DoesMovieContainTags(movie, parameters.RequestedTagIds) && !userMovieIds.Contains(movieId);
             }
 
             return isSimilarityAllowedFilters;
