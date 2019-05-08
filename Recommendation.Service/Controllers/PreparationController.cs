@@ -23,15 +23,6 @@ namespace Recommendation.Service.Controllers
             _dbOptions = optionsBuilder.Options;
         }
 
-
-        [HttpPost("[action]")]
-        public async Task<ActionResult> Vectorize()
-        {
-            var engine = new PythonRecommendationEngine(_dbOptions, _engineOptions);
-            var sth = await engine.VectorizeDescriptions();
-            return Ok();
-        }
-
         [HttpPost("[action]")]
         public async Task<ActionResult> PrepareData()
         {

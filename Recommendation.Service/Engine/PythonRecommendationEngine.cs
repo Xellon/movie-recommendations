@@ -35,6 +35,7 @@ namespace Recommendation.Service
             public int GetHashCode(SimilarityObject obj) => obj.GetHashCode();
         }
 
+        private const short RecommendedMovieLimit = 10;
         private readonly DbContextOptions<Database.DatabaseContext> _dbContextOptions;
         private readonly PythonEngineOptions _options;
         private readonly PythonRecommendationEngineCache _cache;
@@ -101,34 +102,26 @@ namespace Recommendation.Service
             var movieIds = _cache.RetrieveMovieIdsFromCache();
             var similarityMatrix = _cache.RetrieveSimilarityMatrixFromCache(movieIds);
 
-            var movies = await context.Movies.Include(m => m.Tags).ToListAsync();
+            var userMovies = GetUserMoviesByGenres(context, parameters);
 
-            // Get user movies that will be used to find recommendations
-            var userMovies = context.UserMovies.Include(um => um.Movie.Tags)
-                .Where(um => um.UserId == parameters.UserId
-                    && DoesMovieContainTags(um.Movie.Tags.Select(t => t.TagId), parameters.RequestedTagIds))
-                .Select(um => new UserMovie{ Id = um.MovieId, Rating = um.Rating });
+            if (userMovies.Count() == 0)
+                userMovies = GetUserMovies(context);
 
-            // Fill user movies up if there are not enough of them
-            var allMovies = movies
-                .Where(m => DoesMovieContainTags(m.Tags.Select(t => t.TagId), parameters.RequestedTagIds))
-                .OrderByDescending(m => m.AverageRating)
-                .Select(m => new UserMovie{ Id = m.Id, Rating = (float)m.AverageRating })
-                .Take(Math.Max(0, 10 - userMovies.Count()))
-                .Union(userMovies);
+            if (userMovies.Count() == 0)
+                return GetMostPopularMovies(context, parameters);
 
             // Limit matrix to only include requested tags and exclude user movies
-            var isSimilarityAllowedFilters = CreateSimilarityMatrixFilter(similarityMatrix, movieIds, movies, parameters, userMovies);
+            var isSimilarityAllowedFilters = CreateSimilarityMatrixFilter(similarityMatrix, movieIds, context, parameters, userMovies);
 
             // Gather the most similar movies
             var allSimilarities = new List<SimilarityObject>();
-            foreach (var item in allMovies)
+            foreach (var userMovie in userMovies)
             {
-                var movieIndex = FindMovieIndex(movieIds, item.Id);
+                var movieIndex = FindMovieIndex(movieIds, userMovie.Id);
 
                 // Weight similarities by how good the movies are rated and include indicies in selection
                 var similarities = similarityMatrix[movieIndex]
-                    .Select((s, index) => new SimilarityObject { Similarity = s * (item.Rating / 10), Index = index })
+                    .Select((s, index) => new SimilarityObject { Similarity = s * (userMovie.Rating / 10), Index = index })
                     .Where(s => isSimilarityAllowedFilters[s.Index])
                     .OrderByDescending(s => s.Similarity)
                     .Take(5);
@@ -144,32 +137,48 @@ namespace Recommendation.Service
                 .Distinct(equalityComparer)
                 .Where(id => !userMoviesIds.Contains(id.Index))
                 .OrderByDescending(s => s.Similarity)
-                .Take(10)
+                .Take(RecommendedMovieLimit)
                 .Select(s => movieIds[s.Index]);
         }
 
-        private bool[] CreateSimilarityMatrixFilter(double[][] similarityMatrix, int[] movieIds, IEnumerable<Database.Movie> movies, RecommendationParameters parameters, IEnumerable<UserMovie> userMovies)
+        private IQueryable<UserMovie> GetUserMovies(Database.DatabaseContext context) =>
+            context.UserMovies
+                .Select(um => new UserMovie { Id = um.MovieId, Rating = um.Rating });
+
+        private IQueryable<UserMovie> GetUserMoviesByGenres(Database.DatabaseContext context, RecommendationParameters parameters) =>
+            context.UserMovies.Include(um => um.Movie.Tags)
+                .Where(um => um.UserId == parameters.UserId
+                    && DoesMovieContainTags(um.Movie.Tags.Select(t => t.TagId), parameters.RequestedTagIds))
+                .Select(um => new UserMovie { Id = um.MovieId, Rating = um.Rating });
+
+        private IQueryable<int> GetMostPopularMovies(Database.DatabaseContext context, RecommendationParameters parameters) =>
+            context.Movies.Include(m => m.Tags)
+                .Where(m => DoesMovieContainTags(m.Tags.Select(t => t.TagId), parameters.RequestedTagIds))
+                .Select(m => m.Id)
+                .Take(RecommendedMovieLimit);
+
+        private bool[] CreateSimilarityMatrixFilter(
+            double[][] similarityMatrix, int[] movieIds, Database.DatabaseContext context, RecommendationParameters parameters, IEnumerable<UserMovie> userMovies)
         {
+            var movies = context.Movies.Include(m => m.Tags).ToArray();
             var isSimilarityAllowedFilters = new bool[similarityMatrix.GetLength(0)];
             var userMovieIds = userMovies.Select(um => um.Id);
+
             for (int i = 0; i < movieIds.Length; i++)
             {
-                var movieTagIds = movies.First(m => m.Id == movieIds[i]).Tags.Select(t => t.TagId);
+                var movie = movies.First(m => m.Id == movieIds[i]);
 
-                isSimilarityAllowedFilters[i] = DoesMovieContainTags(movieTagIds, parameters.RequestedTagIds) && !userMovieIds.Contains(movieIds[i]);
+                isSimilarityAllowedFilters[i] = DoesMovieContainTags(movie, parameters.RequestedTagIds) && !userMovieIds.Contains(movieIds[i]);
             }
+
             return isSimilarityAllowedFilters;
         }
+        private bool DoesMovieContainTags(Database.Movie movie, IEnumerable<int> requestedTagIds) =>
+            DoesMovieContainTags(movie.Tags.Select(t => t.TagId), requestedTagIds);
 
-        private bool DoesMovieContainTags(IEnumerable<int> movieTagIds, IEnumerable<int> requestedTagIds)
-        {
-            foreach (var id in requestedTagIds)
-            {
-                if (!movieTagIds.Contains(id))
-                    return false;
-            }
-            return true;
-        }
+        private bool DoesMovieContainTags(IEnumerable<int> movieTagIds, IEnumerable<int> requestedTagIds) =>
+            movieTagIds.Intersect(requestedTagIds).Any();
+
 
         private int FindMovieIndex(int[] movieIds, int movieId)
         {
@@ -197,137 +206,29 @@ namespace Recommendation.Service
             _cache.CacheMovieIdArray(ids);
         }
 
-
         public async Task<(double[,] similarityMatrix, int[] ids)> FindSimilarities()
         {
             var context = new Database.DatabaseContext(_dbContextOptions);
             var movies = await context.Movies.Include(m => m.Tags).ToListAsync();
 
-            var descriptions = await context.Movies.Select(m => m.Description).ToListAsync();
+            var movieVectorizer = new MovieVectorizer(Tags);
+            var weights = new MovieVectorizer.Weights
+            {
+                Year = 1.0f,
+                Tags = 1.0f,
+                Rating = 1.0f,
+                Descriptions = 1.0f,
+                Creators = 1.0f
+            };
 
-            var descriptionMatrix = await VectorizeDescriptions(descriptions, weight: 0.4f);
-            var movieMatrix = CreateMovieMatrix(movies, weight: 0.6f);
+            var vectorizedMovies = await movieVectorizer.Vectorize(movies, weights);
 
-            var joinedMatrix = Matrix.JoinMatrices(movieMatrix, descriptionMatrix);
-
-            var stringifiedMatrix = Matrix.MatrixToString(joinedMatrix);
+            var stringifiedMatrix = Matrix.MatrixToString(vectorizedMovies);
 
             var similarityMatrix = await PythonMethods.FindSimilarities(stringifiedMatrix);
             var ids = movies.Select(m => m.Id).ToArray();
 
             return (similarityMatrix, ids);
-        }
-
-        public async Task<double[,]> VectorizeDescriptions()
-        {
-            var context = new Database.DatabaseContext(_dbContextOptions);
-            var descriptions = await context.Movies.Select(m => m.Description).ToListAsync();
-
-            return await VectorizeDescriptions(descriptions);
-        }
-
-        public async Task<double[,]> VectorizeDescriptions(IEnumerable<string> descriptions, float weight = 1.0f)
-        {
-            var vectorizedDescriptions = await PythonMethods.VectorizeDocumentsTFIDF(descriptions);
-
-            return FilterVectorizedDescriptions(vectorizedDescriptions, weight, 20);
-        }
-
-        private double[,] FilterVectorizedDescriptions(double[,] descriptions, float weight = 1.0f, float cutOffPercentage = 50.0f)
-        {
-            var markedColumns = new List<int>();
-            var totalEntries = descriptions.GetLength(0);
-            var localWeight = (1.0f / descriptions.GetLength(1)) * weight;
-
-            for (int j = 0; j < descriptions.GetLength(1); j++)
-            {
-                var entries = 0;
-                double sum = 0;
-                for (int i = 0; i < totalEntries; i++)
-                {
-                    if (descriptions[i, j] > 0)
-                    {
-                        sum += descriptions[i, j];
-                        descriptions[i, j] = localWeight;
-                        entries++;
-                    }
-                }
-
-                var entryPercentage = (sum / entries) * 100;
-                if (cutOffPercentage <= entryPercentage && entries > 1)
-                {
-                    markedColumns.Add(j);
-                }
-            }
-
-            var newDescriptions = new double[totalEntries, markedColumns.Count];
-
-            int index = 0;
-            foreach (var columnIndex in markedColumns)
-            {
-                for (int rowIndex = 0; rowIndex < totalEntries; rowIndex++)
-                {
-                    newDescriptions[rowIndex, index] = descriptions[rowIndex, columnIndex];
-                }
-                index++;
-            }
-
-            return newDescriptions;
-        }
-
-        private double NormalizeAverageRating(double rating, float weight = 1.0f)
-        {
-            // Rating normalized to be [0;1]
-            return (rating / 10.0f) * weight;
-        }
-
-        private double NormalizeYear(int year, float weight = 1.0f)
-        {
-            // How old is the movie, if less than 50 y old, normalized to be [0;1]
-            return ((DateTime.Now.Year - year) / 50.0f) * weight;
-        }
-
-        public double[,] CreateMovieMatrix(IEnumerable<Database.Movie> movies, float weight = 1.0f)
-        {
-            var matrix = new double[movies.Count(), 2];
-            float ratingWeight = weight * 0.33f;
-            float yearWeight = weight * 0.33f;
-            float tagWeight = weight * 0.34f;
-
-            for (int i = 0; i < movies.Count(); i++)
-            {
-                var movie = movies.ElementAt(i);
-                matrix[i, 0] = NormalizeAverageRating(movie.AverageRating, ratingWeight);
-                matrix[i, 1] = NormalizeYear(movie.Date.Year, yearWeight);
-            }
-
-            var tagMatrix = CreateTagMatrix(movies, tagWeight);
-
-            return Matrix.JoinMatrices(matrix, tagMatrix);
-        }
-
-        private double[,] CreateTagMatrix(IEnumerable<Database.Movie> movies, float weight = 1.0f)
-        {
-            var rowCount = movies.Count();
-            var columnCount = Tags.Count();
-            var matrix = new double[movies.Count(), Tags.Count()];
-            var localWeight = (1.0f / Tags.Count()) * weight;
-            var tagsIds = Tags.Select(t => t.Id).ToArray();
-
-            for (int i = 0; i < rowCount; i++)
-            {
-                var movie = movies.ElementAt(i);
-
-                if (movie.Tags is null)
-                    continue;
-
-                for (int j = 0; j < columnCount; j++)
-                {
-                    matrix[i, j] = movie.Tags.FirstOrDefault(mt => mt.TagId == tagsIds[j]) is null ? 0 : localWeight;
-                }
-            }
-
-            return matrix;
         }
     }
 }

@@ -130,49 +130,12 @@ namespace Recommendation.Service.Tests.Unit
             var similarityMatrixString = JsonConvert.SerializeObject(similaritiesMatrix);
             var idsString = JsonConvert.SerializeObject(ids);
             Assert.AreEqual(
-                "[[1.0,0.936794252347466,0.86856252861260785,0.62716316836093644],[0.936794252347466,1.0000000000000002,0.76785906595799713,0.52265517330019962],[0.86856252861260785,0.76785906595799713,0.99999999999999989,0.77546831271907279],[0.62716316836093644,0.52265517330019962,0.77546831271907279,0.99999999999999978]]", 
+                "[[1.0,0.85032982259575962,0.66852235756773826,0.584021194957838]," +
+                "[0.85032982259575962,1.0,0.298883133547568,0.1917974265929025]," +
+                "[0.66852235756773826,0.298883133547568,1.0000000000000002,0.88871006494571314]," +
+                "[0.584021194957838,0.1917974265929025,0.88871006494571314,1.0000000000000002]]", 
                 similarityMatrixString);
             Assert.AreEqual("[1,2,3,4]", idsString);
-        }
-
-        [TestMethod]
-        public void CreateMovieMatrix_TwoMovies_VectorizesMovieAttributesCorrectly()
-        {
-            var contextOptions = PrepareDatabaseOptions();
-
-            var context = new Database.DatabaseContext(contextOptions);
-
-            context.Movies.Add(new Database.Movie
-            {
-                Id = 1,
-                Date = DateTime.Now,
-                AverageRating = 8,
-                Tags = new List<Database.MovieTag>()
-                {
-                    new Database.MovieTag {MovieId = 1, TagId = 2},
-                    new Database.MovieTag {MovieId = 1, TagId = 4},
-                    new Database.MovieTag {MovieId = 1, TagId = 8},
-                }
-            });
-            context.Movies.Add(new Database.Movie
-            {
-                Id = 2,
-                Date = DateTime.Now,
-                AverageRating = 7,
-                Tags = new List<Database.MovieTag>()
-                {
-                    new Database.MovieTag {MovieId = 2, TagId = 2},
-                    new Database.MovieTag {MovieId = 2, TagId = 8},
-                }
-            });
-            context.Tags.Add(new Database.Tag() { Id = 2, Text = "A" });
-            context.Tags.Add(new Database.Tag() { Id = 4, Text = "B" });
-            context.Tags.Add(new Database.Tag() { Id = 8, Text = "C" });
-            context.SaveChanges();
-
-            var engine = new Service.PythonRecommendationEngine(contextOptions, _engineOptions);
-            var matrixString = JsonConvert.SerializeObject(engine.CreateMovieMatrix(context.Movies));
-            Assert.AreEqual("[[0.26400001049041749,0.0,0.11333333700895309,0.11333333700895309,0.11333333700895309],[0.23100000917911528,0.0,0.11333333700895309,0.0,0.11333333700895309]]", matrixString);
         }
     }
 }
