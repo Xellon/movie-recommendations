@@ -1,6 +1,6 @@
 import * as React from "react";
 import { List, CircularProgress } from "@material-ui/core";
-import { SuggestedMovie } from "./SuggestedMovie";
+import { SuggestedMovie, PlaceholderSuggestedMovie } from "./SuggestedMovie";
 import * as DB from "../model/DB";
 import { BackendQueries } from "../common/BackendQueries";
 
@@ -19,10 +19,11 @@ export interface Props {
 interface State {
   movies?: Map<number, Movie>;
   recommendedMovies?: DB.RecommendedMovie[];
+  isUserNew: boolean;
 }
 
 export class RecommendedMovies extends React.PureComponent<Props, State> {
-  public readonly state: State = {};
+  public readonly state: State = { isUserNew: false };
 
   public renderMovies() {
     if (!this.state.movies || !this.state.recommendedMovies)
@@ -44,6 +45,14 @@ export class RecommendedMovies extends React.PureComponent<Props, State> {
 
   public async componentDidMount() {
     const recommendedMovies = await BackendQueries.Movies.queryRecommendedMovies();
+
+    if (recommendedMovies === undefined) {
+      this.setState({ isUserNew: true });
+      return;
+    } else {
+      this.setState({ recommendedMovies });
+    }
+
     const dbTags = await BackendQueries.Tags.queryTags();
     const tags: string[] = [];
     for (const tag of dbTags) {
@@ -65,15 +74,55 @@ export class RecommendedMovies extends React.PureComponent<Props, State> {
       movies.set(dbMovie.id, movie);
     }
 
-    this.setState({ recommendedMovies, movies });
+    this.setState({ movies });
   }
 
   public render() {
     return (
-      <List>
-        {!this.state.recommendedMovies ? <CircularProgress /> : undefined}
-        {this.renderMovies()}
-      </List>
+      <>
+        {!this.state.recommendedMovies && !this.state.isUserNew ? <CircularProgress /> : undefined}
+        {this.state.isUserNew
+          ? "There are no recommended movies yet. Pleast request a new recomendation!"
+          :
+          <RecommendedMovieList
+            movies={this.state.movies}
+            recommendedMovies={this.state.recommendedMovies}
+          />
+        }
+      </>
     );
   }
+}
+
+interface RecommendedMovieListProps {
+  movies?: Map<number, Movie>;
+  recommendedMovies?: DB.RecommendedMovie[];
+}
+
+function RecommendedMovieList(props: RecommendedMovieListProps) {
+  if (!props.recommendedMovies)
+    return null;
+
+  return (
+    <List>
+      {props.recommendedMovies.map(recommendedMovie => {
+        if (!props.movies) {
+          return (
+            <PlaceholderSuggestedMovie key={`ph-${recommendedMovie.movieId}`} />
+          );
+        }
+
+        const movie = props.movies.get(recommendedMovie.movieId);
+        return (
+          <SuggestedMovie
+            key={movie.id}
+            title={movie.title}
+            imageUrl={movie.imageUrl}
+            possibleRating={movie.rating}
+            tags={movie.tags}
+          />
+        );
+      })}
+    </List>
+  );
 }
