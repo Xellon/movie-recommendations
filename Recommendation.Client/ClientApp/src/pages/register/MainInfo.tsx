@@ -13,14 +13,17 @@ export interface Props {
 }
 
 export interface State extends MainInfoForm {
+  passwordRepeated: string;
   emailError?: string;
   passwordError?: string;
+  passwordRepeatedError?: string;
 }
 
 export class MainInfo extends React.Component<Props, State> {
   public readonly state: State = {
     email: "",
     password: "",
+    passwordRepeated: "",
   };
 
   constructor(props: Props) {
@@ -28,27 +31,16 @@ export class MainInfo extends React.Component<Props, State> {
     props.submitEvent.register(this._onSubmit);
   }
 
-  private handleChange = (type: keyof MainInfoForm) => {
+  private handleChange = (type: keyof MainInfoForm | "passwordRepeated") => {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = this.readValue(type, e);
       this.setState({
-        [type]: value,
+        [type]: e.target.value,
         [type + "Error"]: undefined,
       } as Pick<MainInfoForm, keyof MainInfoForm>);
     };
   }
 
-  private readValue(type: keyof MainInfoForm, e: React.ChangeEvent<HTMLInputElement>) {
-    let value = e.target.value;
-    if (type === "password") {
-      const hiddenLetters = value.lastIndexOf("*");
-      value = this.state[type].slice(0, hiddenLetters + 1) +
-        value.slice(hiddenLetters + 1);
-    }
-    return value;
-  }
-
-  private validate(type: keyof MainInfoForm) {
+  private validate(type: keyof MainInfoForm | "passwordRepeated") {
     let error: string | undefined;
     switch (type) {
       case "email":
@@ -56,6 +48,9 @@ export class MainInfo extends React.Component<Props, State> {
         break;
       case "password":
         error = this.validatePassword(this.state.password);
+        break;
+      case "passwordRepeated":
+        error = this.validateRepeatedPassword(this.state.password);
         break;
     }
     this.setState({ [type + "Error"]: error } as Pick<MainInfoForm, keyof MainInfoForm>);
@@ -80,8 +75,17 @@ export class MainInfo extends React.Component<Props, State> {
     return undefined;
   }
 
+  private validateRepeatedPassword(password: string) {
+    if (password === this.state.passwordRepeated)
+      return undefined;
+
+    return "Password does not match!";
+  }
+
   private _onSubmit = () => {
-    if (!this.validate("email") || !this.validate("password"))
+    if (!this.validate("email")
+      || !this.validate("password")
+      || !this.validate("passwordRepeated"))
       return false;
 
     this.props.onSubmit({
@@ -118,11 +122,24 @@ export class MainInfo extends React.Component<Props, State> {
           <TextField
             label="Password"
             required
+            type="password"
             margin="normal"
-            value={this.state.password.replace(/./g, "*")}
+            value={this.state.password}
             onChange={this.handleChange("password")}
             helperText={this.state.passwordError}
             error={!!this.state.passwordError}
+          />
+        </div>
+        <div>
+          <TextField
+            label="Password"
+            required
+            type="password"
+            margin="normal"
+            value={this.state.passwordRepeated}
+            onChange={this.handleChange("passwordRepeated")}
+            helperText={this.state.passwordRepeatedError}
+            error={!!this.state.passwordRepeatedError}
           />
         </div>
       </>
