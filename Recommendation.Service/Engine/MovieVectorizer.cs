@@ -19,9 +19,12 @@ namespace Recommendation.Service
 
         private IEnumerable<Database.Tag> Tags { get; }
 
-        public MovieVectorizer(IEnumerable<Database.Tag> tags)
+        private IEnumerable<Database.Creator> Creators { get; }
+
+        public MovieVectorizer(IEnumerable<Database.Tag> tags, IEnumerable<Database.Creator> creators)
         {
             Tags = tags;
+            Creators = creators;
         }
 
         public async Task<double[,]> Vectorize(IEnumerable<Database.Movie> movies, Weights weights)
@@ -109,7 +112,9 @@ namespace Recommendation.Service
 
             var tagMatrix = CreateTagMatrix(movies, weights.Tags);
 
-            return Matrix.JoinMatrices(matrix, tagMatrix);
+            var creatorMatrix = CreateCreatorMatrix(movies, weights.Creators);
+
+            return Matrix.JoinMatrices(Matrix.JoinMatrices(matrix, tagMatrix), creatorMatrix);
         }
 
         private double NormalizeAverageRating(double rating, float weight = 1.0f)
@@ -124,7 +129,7 @@ namespace Recommendation.Service
             return ((DateTime.Now.Year - year) / 50.0f) * weight;
         }
 
-        private double[,] CreateTagMatrix(IEnumerable<Database.Movie> movies, float weight = 1.0f)
+        public double[,] CreateTagMatrix(IEnumerable<Database.Movie> movies, float weight = 1.0f)
         {
             var rowCount = movies.Count();
             var columnCount = Tags.Count();
@@ -141,6 +146,29 @@ namespace Recommendation.Service
                 for (int j = 0; j < columnCount; j++)
                 {
                     matrix[i, j] = movie.Tags.FirstOrDefault(mt => mt.TagId == tagsIds[j]) is null ? 0 : weight;
+                }
+            }
+
+            return matrix;
+        }
+
+        public double[,] CreateCreatorMatrix(IEnumerable<Database.Movie> movies, float weight = 1.0f)
+        {
+            var rowCount = movies.Count();
+            var columnCount = Creators.Count();
+            var matrix = new double[movies.Count(), Creators.Count()];
+            var creatorsIds = Creators.Select(c => c.Id).ToArray();
+
+            for (int i = 0; i < rowCount; i++)
+            {
+                var movie = movies.ElementAt(i);
+
+                if (movie.Creators is null)
+                    continue;
+
+                for (int j = 0; j < columnCount; j++)
+                {
+                    matrix[i, j] = movie.Creators.FirstOrDefault(c => c.CreatorId == creatorsIds[j]) is null ? 0 : weight;
                 }
             }
 

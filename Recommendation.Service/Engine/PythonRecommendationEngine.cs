@@ -210,9 +210,12 @@ namespace Recommendation.Service
         public async Task<(double[,] similarityMatrix, int[] ids)> FindSimilarities()
         {
             var context = new Database.DatabaseContext(_dbContextOptions);
-            var movies = await context.Movies.Include(m => m.Tags).ToListAsync();
+            var movies = await context.Movies
+                .Include(m => m.Tags)
+                .Include(m => m.Creators)
+                .ToListAsync();
 
-            var movieVectorizer = new MovieVectorizer(Tags);
+            var movieVectorizer = new MovieVectorizer(Tags, context.Creators);
             var weights = new MovieVectorizer.Weights
             {
                 Year = 1.0f,

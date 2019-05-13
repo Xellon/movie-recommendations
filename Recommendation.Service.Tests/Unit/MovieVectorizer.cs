@@ -23,7 +23,8 @@ namespace Recommendation.Service.Tests.Unit
                     new Database.MovieTag {MovieId = 1, TagId = 2},
                     new Database.MovieTag {MovieId = 1, TagId = 4},
                     new Database.MovieTag {MovieId = 1, TagId = 8},
-                }
+                },
+                Creators = new List<Database.MovieCreator>() { new Database.MovieCreator { CreatorId = 1, MovieId = 1 } }
             },
                 new Database.Movie
             {
@@ -34,21 +35,28 @@ namespace Recommendation.Service.Tests.Unit
                 {
                     new Database.MovieTag {MovieId = 2, TagId = 2},
                     new Database.MovieTag {MovieId = 2, TagId = 8},
-                }
+                },
+                Creators = new List<Database.MovieCreator>() { new Database.MovieCreator { CreatorId = 3, MovieId = 2 } }
             }
             };
 
             var tags = new List<Database.Tag>
             {
-            new Database.Tag() { Id = 2, Text = "A" },
-            new Database.Tag() { Id = 4, Text = "B" },
-            new Database.Tag() { Id = 8, Text = "C" }
+                new Database.Tag() { Id = 2, Text = "A" },
+                new Database.Tag() { Id = 4, Text = "B" },
+                new Database.Tag() { Id = 8, Text = "C" }
             };
 
-            var vectorizer = new Service.MovieVectorizer(tags);
+            var creators = new List<Database.Creator>
+            {
+                new Database.Creator() { Id = 1, Name = "Marvel" },
+                new Database.Creator() { Id = 3, Name = "Disney" }
+            };
+
+            var vectorizer = new Service.MovieVectorizer(tags, creators);
 
             var matrixString = JsonConvert.SerializeObject(vectorizer.CreateMovieMatrix(movies));
-            Assert.AreEqual("[[0.8,0.0,1.0,1.0,1.0],[0.7,0.0,1.0,0.0,1.0]]", matrixString);
+            Assert.AreEqual("[[0.8,0.0,1.0,1.0,1.0,1.0,0.0],[0.7,0.0,1.0,0.0,1.0,0.0,1.0]]", matrixString);
         }
     }
 }
