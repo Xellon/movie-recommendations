@@ -25,19 +25,18 @@ const RequestRecommendationButton = withRouter(({ history }) => (
 ));
 
 export class Main extends React.PureComponent<RouteComponentProps> {
+  public async componentDidMount() {
+    await Authentication.verifyLoggedInUser();
+    const user = Authentication.getCachedUser();
 
-  constructor(props: RouteComponentProps) {
-    super(props);
-
-    const user = Authentication.getLoggedInUser();
     switch (user.userType) {
       case DB.UserType.Client:
         break;
       case DB.UserType.Admin:
-        props.history.push("/movies");
+        this.props.history.push("/movies");
         break;
       case DB.UserType.Finance:
-        props.history.push("/receipts");
+        this.props.history.push("/receipts");
         break;
     }
   }

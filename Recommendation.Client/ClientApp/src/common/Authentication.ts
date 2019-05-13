@@ -26,6 +26,15 @@ function getUser(): DB.SignedInUser | undefined {
   return JSON.parse(userString);
 }
 
+async function isSessionAuthorized() {
+  const response = await Utils.fetchBackend("/api/account/verifyAuthorization");
+
+  if (response.ok)
+    return true;
+
+  return false;
+}
+
 async function logIn(email: string, password: string): Promise<DB.SignedInUser | undefined> {
   const response = await Utils.fetchBackend(
     "/api/account/login", {
@@ -52,13 +61,20 @@ async function logIn(email: string, password: string): Promise<DB.SignedInUser |
   }
 }
 
-function getLoggedInUser(): DB.SignedInUser | undefined {
+async function verifyLoggedInUser() {
+  if (await isSessionAuthorized())
+    return;
+
+  deleteUser();
+}
+
+function getCachedUser(): DB.SignedInUser | undefined {
   return getUser();
 }
 
-function logOut() {
-  const user = getLoggedInUser();
-  Utils.fetchBackend(
+async function logOut() {
+  const user = await getCachedUser();
+  await Utils.fetchBackend(
     `/api/account/logout?email${user.email}`, {
       method: "POST",
     },
@@ -71,5 +87,6 @@ function logOut() {
 export const Authentication = {
   logIn,
   logOut,
-  getLoggedInUser,
+  verifyLoggedInUser,
+  getCachedUser,
 };

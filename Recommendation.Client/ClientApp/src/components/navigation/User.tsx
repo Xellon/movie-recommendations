@@ -4,7 +4,6 @@ import { Typography, Divider, Avatar, Button } from "@material-ui/core";
 import PersonIcon from "@material-ui/icons/Person";
 import { withRouter } from "react-router-dom";
 import { Utils } from "../../common/Utils";
-import { Authentication } from "../../common/Authentication";
 
 export function createNavigationButton(text: string, path: string, style?: React.CSSProperties) {
   return withRouter(({ history }) => (
@@ -22,58 +21,29 @@ export function createNavigationButton(text: string, path: string, style?: React
 const ChangeMoviesButton = createNavigationButton("Change movies", "/usermovies");
 const RequestRecommendationButton = createNavigationButton("Request a Recommendation", "/requestmovie");
 
-const MovieListButton = createNavigationButton("Movie List", "/movies");
-const UsersButton = createNavigationButton("Users", "/users");
-
 interface Props {
   user: DB.SignedInUser;
 }
 
-interface State {
-  isClientMember?: boolean;
+export function UserNavigation(props: Props) {
+  return (
+    <>
+      <Avatar style={{ margin: "auto" }}>
+        <PersonIcon />
+      </Avatar>
+      <Typography style={{ marginBottom: 30, marginTop: 20 }}>
+        {props.user.email}
+      </Typography>
+      <UserNavigationButtons />
+      <Divider style={{ margin: "20px 10px" }} />
+    </>
+  );
 }
 
-export class UserNavigation extends React.Component<Props, State> {
-  public readonly state: State = {};
-
-  private getButtons() {
-    switch (this.props.user.userType) {
-      case DB.UserType.Client:
-        return (
-          <>
-            <ChangeMoviesButton />
-            <RequestRecommendationButton />
-          </>);
-      case DB.UserType.Admin:
-        return (
-          <>
-            <MovieListButton />
-            <UsersButton />
-          </>);
-    }
-
-  }
-
-  public async componentDidMount() {
-    const user = Authentication.getLoggedInUser();
-
-    const response = await Utils.fetchBackend(`/api/data/user/isMember?userId=${user.id}`);
-
-    this.setState({ isClientMember: (await response.text()) === "true" });
-  }
-
-  public render() {
-    return (
-      <>
-        <Avatar style={{ margin: "auto", border: this.state.isClientMember ? "solid 6px gold" : undefined }}>
-          <PersonIcon />
-        </Avatar>
-        <Typography style={{ marginBottom: 30, marginTop: 20 }}>
-          {this.props.user.email}
-        </Typography>
-        {this.getButtons()}
-        <Divider style={{ margin: "20px 10px" }} />
-      </>
-    );
-  }
+function UserNavigationButtons() {
+  return (
+    <>
+      <ChangeMoviesButton />
+      <RequestRecommendationButton />
+    </>);
 }

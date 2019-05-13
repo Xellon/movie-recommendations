@@ -5,15 +5,13 @@ import { UserNavigation } from "./User";
 
 import "./Navigation.scss";
 
-export class Navigation extends React.Component {
-  public render() {
-    const user = Authentication.getLoggedInUser();
+export function Navigation() {
+  const user = Authentication.getCachedUser();
 
-    return (
-      <nav className="left-nav">
-        {user ? <UserNavigation user={user} /> : undefined}
-        <GlobalNavigation />
-      </nav>
-    );
-  }
+  return (
+    <nav className="left-nav">
+      {user ? <UserNavigation user={user} /> : undefined}
+      <GlobalNavigation />
+    </nav>
+  );
 }

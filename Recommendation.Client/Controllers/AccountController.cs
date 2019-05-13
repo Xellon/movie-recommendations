@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Recommendation.Database;
@@ -70,6 +71,10 @@ namespace Recommendation.Client.Controllers
 
             return Ok(user.Id);
         }
+
+        [Authorize]
+        [HttpGet("[action]")]
+        public IActionResult VerifyAuthorization() => Ok();
 
         private async Task SaveUserMovies(List<FormUserMovie> movies, string userId)
         {

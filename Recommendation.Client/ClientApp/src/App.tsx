@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Route } from "react-router-dom";
-import { CssBaseline, MuiThemeProvider, createMuiTheme, Theme } from "@material-ui/core";
+import { CssBaseline, MuiThemeProvider, createMuiTheme } from "@material-ui/core";
 import { Main } from "./pages/main/Main";
 import { Login } from "./pages/login/Login";
 import { Movies } from "./pages/movies/Movies";
@@ -13,7 +13,6 @@ import { Navigation } from "./components/navigation/Navigation";
 import { AboutPage } from "./pages/about/About";
 import { HeaderBar } from "./components/HeaderBar";
 import { UserMovies } from "./pages/usermovies/UserMovies";
-import { Props } from "./pages/register/MainInfo";
 import { lime, pink } from "@material-ui/core/colors";
 
 import "./App.scss";
@@ -24,14 +23,15 @@ import "./App.scss";
 //   );
 // }
 
-const SharedRoutes: React.ReactNode = (
-  <>
-    <Route path="/login" component={Login} />
-    <Route path="/register" component={Register} />
-    <Route path="/about" component={AboutPage} />
-    {/* <Route path="*" component={errorPage} /> */}
-  </>
-);
+const appTheme = createMuiTheme({
+  palette: {
+    primary: lime,
+    secondary: pink,
+  },
+  typography: {
+    useNextVariants: true,
+  },
+});
 
 interface State {
   showNavigation: boolean;
@@ -39,50 +39,9 @@ interface State {
 
 export default class App extends React.Component<{}, State> {
   public readonly state: State = { showNavigation: false };
-  private readonly _theme: Theme;
 
-  constructor(props: Props) {
-    super(props);
-
-    this._theme = createMuiTheme({
-      palette: {
-        primary: lime,
-        secondary: pink,
-      },
-    });
-  }
-
-  private getRoutesForUser() {
-    const user = Authentication.getLoggedInUser();
-
-    let routes = SharedRoutes;
-
-    if (!user)
-      return (<><Route exact path="/" component={Welcome} />{routes}</>);
-
-    routes = (<><Route exact path="/" component={Main} />{routes}</>);
-
-    switch (user.userType) {
-      case DB.UserType.Client:
-        routes = (
-          <>
-            <Route path="/requestmovie" component={RequestMovie} />
-            <Route path="/usermovies" component={UserMovies} />
-            {routes}
-          </>);
-        break;
-      case DB.UserType.Admin:
-        routes = (
-          <>
-            <Route path="/movies" component={Movies} />
-            {routes}
-          </>);
-        break;
-      case DB.UserType.Finance:
-        break;
-    }
-
-    return routes;
+  public async componentDidMount() {
+    await Authentication.verifyLoggedInUser();
   }
 
   private _onNavigationClick = () => {
@@ -91,7 +50,7 @@ export default class App extends React.Component<{}, State> {
 
   public render() {
     return (
-      <MuiThemeProvider theme={this._theme}>
+      <MuiThemeProvider theme={appTheme}>
         <CssBaseline />
         <header>
           <HeaderBar onNavigationClick={this._onNavigationClick} />
@@ -103,10 +62,53 @@ export default class App extends React.Component<{}, State> {
           {/* Side menu */
             this.state.showNavigation ? <Navigation /> : undefined}
 
-          {/* Main */
-            this.getRoutesForUser()}
+          <UserRoutes />
         </div>
       </MuiThemeProvider>
     );
   }
+}
+
+function SharedRoutes() {
+  return (
+    <>
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/about" component={AboutPage} />
+      {/* <Route path="*" component={errorPage} /> */}
+    </>
+  );
+}
+
+function UserRoutes() {
+  const user = Authentication.getCachedUser();
+
+  let routes = <SharedRoutes />;
+
+  if (!user)
+    return (<><Route exact path="/" component={Welcome} />{routes}</>);
+
+  routes = (<><Route exact path="/" component={Main} />{routes}</>);
+
+  switch (user.userType) {
+    case DB.UserType.Client:
+      routes = (
+        <>
+          <Route path="/requestmovie" component={RequestMovie} />
+          <Route path="/usermovies" component={UserMovies} />
+          {routes}
+        </>);
+      break;
+    case DB.UserType.Admin:
+      routes = (
+        <>
+          <Route path="/movies" component={Movies} />
+          {routes}
+        </>);
+      break;
+    case DB.UserType.Finance:
+      break;
+  }
+
+  return routes;
 }

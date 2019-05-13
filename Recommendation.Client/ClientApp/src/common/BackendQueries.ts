@@ -30,7 +30,7 @@ const stopRecommendationGeneration = async (queuedRecommendationId: number) => {
 };
 
 const queryRecommendedMovies = async (recommendationId?: number): Promise<DB.RecommendedMovie[] | undefined> => {
-  const user = Authentication.getLoggedInUser();
+  const user = Authentication.getCachedUser();
 
   let response: Response;
 

@@ -4,6 +4,7 @@ import { Authentication } from "../common/Authentication";
 import { Utils } from "../common/Utils";
 import { withRouter } from "react-router-dom";
 import MenuIcon from "@material-ui/icons/Menu";
+import * as DB from "../model/DB";
 
 const styles = {
   grow: {
@@ -51,52 +52,57 @@ interface Props {
   onNavigationClick: () => void;
 }
 
-export class HeaderBar extends React.Component<Props> {
+export function HeaderBar(props: Props) {
+  const user = Authentication.getCachedUser();
 
-  private onSignOut = () => {
+  React.useEffect(() => {
+    Authentication.verifyLoggedInUser();
+  }, []);
+
+  return (
+    <>
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="Menu"
+            onClick={props.onNavigationClick}
+          >
+            <MenuIcon />
+          </IconButton>
+          <MainPageButton />
+          <UserButtons user={user} />
+        </Toolbar>
+      </AppBar>
+    </>
+  );
+}
+
+interface UserButtonProps {
+  user: DB.SignedInUser | undefined;
+}
+
+function UserButtons(props: UserButtonProps) {
+  const onSignOut = () => {
     Authentication.logOut();
     location.reload();
-  }
+  };
 
-  private getAppBarButtonsForUser() {
-    const user = Authentication.getLoggedInUser();
-
-    if (!user)
-      return (
-        <>
-          <LoginPageButton />
-          <RegisterPageButton />
-        </>
-      );
-
-    return (
-      <Button
-        color="inherit"
-        style={styles.menuButton}
-        onClick={this.onSignOut}
-      >
-        Sign Out
-      </Button>
-    );
-  }
-
-  public render() {
+  if (!props.user)
     return (
       <>
-        <AppBar position="static">
-          <Toolbar>
-            <IconButton
-              color="inherit"
-              aria-label="Menu"
-              onClick={this.props.onNavigationClick}
-            >
-              <MenuIcon />
-            </IconButton>
-            <MainPageButton />
-            {this.getAppBarButtonsForUser()}
-          </Toolbar>
-        </AppBar>
+        <LoginPageButton />
+        <RegisterPageButton />
       </>
     );
-  }
+
+  return (
+    <Button
+      color="inherit"
+      style={styles.menuButton}
+      onClick={onSignOut}
+    >
+      Sign Out
+    </Button>
+  );
 }
