@@ -10,7 +10,12 @@ export function RecommendationStatusDisplay(props: RecommendationStatusViewProps
     case RecommendationStatus.DoesNotExist:
       return <>Failed to start</>;
     case RecommendationStatus.Error:
-      return <>Error</>;
+      return (
+        <>
+          <p>Error</p>
+          <p>Please try again later</p>
+        </>
+      );
     case RecommendationStatus.Finished:
       return <>Finished</>;
     case RecommendationStatus.InProgress:

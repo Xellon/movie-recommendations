@@ -102,8 +102,7 @@ namespace Recommendation.Service
 
                     _logger.LogInformation(task.Task.Exception, task.Task.Exception.Message);
                     _logger.LogError(task.Task.Exception.Message);
-                    // TODO: Should log the Exception...
-                    //throw task.Task.Exception;
+
                     continue;
                 }
 
