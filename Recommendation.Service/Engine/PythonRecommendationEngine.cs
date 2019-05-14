@@ -218,11 +218,11 @@ namespace Recommendation.Service
             var movieVectorizer = new MovieVectorizer(Tags, context.Creators);
             var weights = new MovieVectorizer.Weights
             {
-                Year = 1.0f,
-                Tags = 1.0f,
+                Year = 3.0f,
+                Tags = 2.0f,
                 Rating = 1.0f,
-                Descriptions = 1.0f,
-                Creators = 1.0f
+                Descriptions = 5.0f,
+                Creators = 2.0f
             };
 
             var vectorizedMovies = await movieVectorizer.Vectorize(movies, weights);
