@@ -33,15 +33,30 @@ namespace Recommendation.Service
 
         public int GetQueuedCount()
         {
-            var count = 0;
-            for (int i = 1; i <= GetLatestRecommendationId(); i++)
-            {
-                var status = GetRecommendationStatus(i);
+            var result = DataBase.ScriptEvaluate(@"
+                local count = 0
+                local matches = redis.pcall('KEYS', 'recommendation:*')
 
-                if (status == RecommendationStatus.Queued)
-                    count++;
+                for _,key in ipairs(matches) do
+                    if key ~= 'recommendation:id' then 
+                        local val = redis.pcall('HGET', key, 'status')
+                        if val == '0' then
+                            count = count + 1
+                        end
+                    end
+                end
+
+                return count
+            ");
+
+            try
+            {
+                return int.Parse(result.ToString());
             }
-            return count;
+            catch
+            {
+                return 0;
+            }
         }
 
         public int Add(RecommendationParameters parameters)
