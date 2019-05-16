@@ -75,23 +75,13 @@ namespace Recommendation.Service
             _runningTasks = new List<RecommendationTask>(runningTasks);
 
             // Fill task list if needed
-            for (int i = 0; i < Math.Min(ConcurrentRecommendationsLimit - _runningTasks.Count(), _queue.QueuedCount); i++)
-            {
-                var queuedRecommendation = _queue.GetUnstartedRecommendation();
+            FillTaskList();
 
-                if (queuedRecommendation is null || _storage.GetRecommendationStatus(queuedRecommendation.Id) != Database.RecommendationStatus.Queued)
-                    break;
+            UpdateFinishedTasks(finishedTasks);
+        }
 
-                _storage.SetRecommendationStatus(queuedRecommendation.Id, Database.RecommendationStatus.InProgress);
-
-                var task = _recommendationEngine.GenerateRecommendation(queuedRecommendation.RecommendationParameters);
-                _runningTasks.Add(new RecommendationTask
-                {
-                    Task = task,
-                    QueuedRecommendationId = queuedRecommendation.Id
-                });
-            }
-
+        private void UpdateFinishedTasks(IEnumerable<RecommendationTask> finishedTasks)
+        {
             // Update queued recommendations that are finished
             foreach (var task in finishedTasks)
             {
@@ -108,6 +98,27 @@ namespace Recommendation.Service
 
                 _storage.SetRecommendationStatus(task.QueuedRecommendationId, Database.RecommendationStatus.Finished);
                 _storage.SetRecommendationId(task.QueuedRecommendationId, task.Task.Result);
+            }
+        }
+
+        private void FillTaskList()
+        {
+            // Fill task list if needed
+            for (int i = 0; i < Math.Min(ConcurrentRecommendationsLimit - _runningTasks.Count(), _queue.QueuedCount); i++)
+            {
+                var queuedRecommendation = _queue.GetUnstartedRecommendation();
+
+                if (queuedRecommendation is null || _storage.GetRecommendationStatus(queuedRecommendation.Id) != Database.RecommendationStatus.Queued)
+                    break;
+
+                _storage.SetRecommendationStatus(queuedRecommendation.Id, Database.RecommendationStatus.InProgress);
+
+                var task = _recommendationEngine.GenerateRecommendation(queuedRecommendation.RecommendationParameters);
+                _runningTasks.Add(new RecommendationTask
+                {
+                    Task = task,
+                    QueuedRecommendationId = queuedRecommendation.Id
+                });
             }
         }
 

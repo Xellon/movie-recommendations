@@ -32,9 +32,28 @@ namespace Recommendation.Service
 
         public QueuedRecommendation GetUnstartedRecommendation()
         {
-            return _storage.GetOldestUnstartedRecommendation();
+            try
+            {
+                return _storage.GetOldestUnstartedRecommendation();
+            }
+            catch
+            {
+                return null;
+            }
         }
 
-        public int QueuedCount => _storage.GetQueuedCount();
+        public int QueuedCount {
+            get {
+                try
+                {
+                    return _storage.GetQueuedCount();
+                }
+                catch
+                {
+                    return 0;
+                }
+
+            }
+        }
     }
 }
