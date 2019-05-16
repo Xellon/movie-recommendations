@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using Newtonsoft.Json;
 using Recommendation.Database;
 using StackExchange.Redis;
@@ -65,7 +66,7 @@ namespace Recommendation.Service
             var hash = new HashEntry[] {
                 new HashEntry("recommendationParameters", JsonConvert.SerializeObject(parameters)),
                 new HashEntry("status", (int)RecommendationStatus.Queued),
-                new HashEntry("startTime", DateTime.Now.ToString()),
+                new HashEntry("startTime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)),
             };
 
             DataBase.HashSet($"recommendation:{id}", hash);
@@ -74,23 +75,42 @@ namespace Recommendation.Service
 
         public QueuedRecommendation GetOldestUnstartedRecommendation()
         {
+            var result = DataBase.ScriptEvaluate(@"
+                local recommendations = {}
+
+                local matches = redis.pcall('KEYS', 'recommendation:*')
+
+                local index = 1
+                for _,key in ipairs(matches) do
+                    if key ~= 'recommendation:id' then 
+                        local startTime = redis.pcall('HGET', key, 'startTime')
+                        local status = redis.pcall('HGET', key, 'status')
+
+                        if status == '0' then
+                            recommendations[index] = {key, startTime}
+                            index = index + 1
+                        end
+                    end
+                end
+
+                return recommendations
+            ");
+
             var oldestDate = DateTime.Now;
-            var oldestIndex = 0;
-
-            for (int i = 1; i <= GetLatestRecommendationId(); i++)
+            var oldestKey = "recommendation:0";
+            foreach (var r in (RedisResult[])result)
             {
-                if (!DataBase.KeyExists($"recommendation:{i}"))
-                    continue;
+                var key = ((RedisResult[])r)[0].ToString();
+                var date = DateTime.Parse(((RedisResult[])r)[1].ToString());
 
-                var status = GetRecommendationStatus(i);
-                var date = GetRecommendationStartTime(i);
-
-                if (status == RecommendationStatus.Queued && date < oldestDate)
+                if (date < oldestDate)
                 {
                     oldestDate = date;
-                    oldestIndex = i;
+                    oldestKey = key;
                 }
             }
+
+            int oldestIndex = int.Parse(oldestKey.Substring(15));
 
             return new QueuedRecommendation()
             {
