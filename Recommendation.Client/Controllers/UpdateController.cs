@@ -202,6 +202,18 @@ namespace Recommendation.Client.Controllers
 
             return Ok();
         }
+
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> PrepareData()
+        {
+            var host = _configuration["Services:Recommendation:Uri"];
+            var port = _configuration["Services:Recommendation:Port"];
+            var uri = new Uri($"http://{host}:{port}/api/preparation/PrepareData");
+            var response = await _client.PostAsync(uri, null);
+
+            return StatusCode((int)response.StatusCode);
+        }
     }
 
     namespace TMDB

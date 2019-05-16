@@ -180,7 +180,6 @@ namespace Recommendation.Service
         private bool DoesMovieContainTags(IEnumerable<int> movieTagIds, IEnumerable<int> requestedTagIds) =>
             movieTagIds.Intersect(requestedTagIds).Any();
 
-
         private int FindMovieIndex(int[] movieIds, int movieId)
         {
             for (int i = 0; i < movieIds.Length; i++)
