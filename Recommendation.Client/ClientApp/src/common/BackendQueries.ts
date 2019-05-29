@@ -1,5 +1,6 @@
 
 import * as DB from "../model/DB";
+import * as Model from "../model/Model";
 import { Utils } from "./Utils";
 import { Authentication } from "./Authentication";
 
@@ -73,6 +74,36 @@ const startRecommendationGeneration = async (userId: string, tagIds: number[]) =
   return +(await response.text());
 };
 
+async function requestDeletion(movies: Model.UserMovie[]) {
+  const user = Authentication.getCachedUser();
+
+  const result = await Utils.fetchBackend(`/api/data/user/movies?userId=${user.id}`, {
+    method: "DELETE",
+    body: JSON.stringify(movies),
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    },
+  });
+
+  return result.ok;
+}
+
+async function requestAddition(movies: Model.UserMovie[]) {
+  const user = Authentication.getCachedUser();
+
+  const result = await Utils.fetchBackend(`/api/data/user/movies?userId=${user.id}`, {
+    method: "POST",
+    body: JSON.stringify(movies),
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    },
+  });
+
+  return result.ok;
+}
+
 export const BackendQueries = {
   Tags: {
     queryTags,
@@ -85,5 +116,9 @@ export const BackendQueries = {
   Movies: {
     queryRecommendedMovies,
     queryMovies,
+  },
+  UserMovies: {
+    requestAddition,
+    requestDeletion,
   },
 };

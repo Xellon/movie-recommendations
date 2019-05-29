@@ -10,6 +10,7 @@ import * as _ from "lodash";
 
 import "./UserMovies.scss";
 import { StatusSnackbar, StatusSnackbarType } from "../../components/StatusSnackbar";
+import { BackendQueries } from "../../common/BackendQueries";
 
 interface Message {
   text: string;
@@ -43,78 +44,30 @@ export class UserMovies extends React.PureComponent<{}, State> {
     return moviesToDelete;
   }
 
-  private async requestDeletion(movies: Model.UserMovie[]) {
-    const user = Authentication.getCachedUser();
-
-    this.setState({ isSaving: true, message: undefined });
-
-    const result = await Utils.fetchBackend(`/api/data/user/movies?userId=${user.id}`, {
-      method: "DELETE",
-      body: JSON.stringify(movies),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!result.ok) {
-      this.setState({
-        isSaving: false,
-        message: { text: "Failed to delete the movies, please try again later!", isError: true },
-      });
-      return;
-    }
-
-    this.setState({
-      isSaving: false,
-      message: { text: "Deleted movies successfully!", isError: false },
-    });
-  }
-
   private getAddedMovies(movies: Model.UserMovie[]) {
     if (this.state.userMovies)
       return movies.filter(m => !this.state.userMovies.find(userMovie => userMovie.movieId === m.movieId));
     return movies;
   }
 
-  private async requestAddition(movies: Model.UserMovie[]) {
-    const user = Authentication.getCachedUser();
+  private _onSave = async (movies: Model.UserMovie[]) => {
+    const addedMovies = this.getAddedMovies(movies);
+    let isUpdateSuccessfull = true;
 
     this.setState({ isSaving: true, message: undefined });
 
-    const result = await Utils.fetchBackend(`/api/data/user/movies?userId=${user.id}`, {
-      method: "POST",
-      body: JSON.stringify(movies),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!result.ok) {
-      this.setState({
-        isSaving: false,
-        message: { text: "Failed to save the movies, please try again later!", isError: true },
-      });
-      return;
-    }
-
-    this.setState({
-      isSaving: false,
-      message: { text: "Saved movies successfully!", isError: false },
-    });
-  }
-
-  private _onSave = async (movies: Model.UserMovie[]) => {
-    const addedMovies = this.getAddedMovies(movies);
-
     if (addedMovies && addedMovies.length)
-      await this.requestAddition(addedMovies);
+      isUpdateSuccessfull = isUpdateSuccessfull && (await BackendQueries.UserMovies.requestAddition(addedMovies));
 
     const deletedMovies = this.getDeletedMovies(movies);
 
     if (deletedMovies && deletedMovies.length)
-      await this.requestDeletion(deletedMovies);
+      isUpdateSuccessfull = isUpdateSuccessfull && (await BackendQueries.UserMovies.requestDeletion(deletedMovies));
+
+    if (!isUpdateSuccessfull)
+      this.setState({ isSaving: false, message: { text: "Update failed, please try again later!", isError: true } });
+
+    this.setState({ isSaving: false, message: { text: "Update successfull!", isError: false } });
 
     let userMovies = addedMovies;
     if (this.state.userMovies)
