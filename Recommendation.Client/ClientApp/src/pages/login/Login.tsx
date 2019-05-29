@@ -6,10 +6,11 @@ import InputLabel from "@material-ui/core/InputLabel";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
 import { Authentication } from "../../common/Authentication";
-import { Snackbar, SnackbarContent, FormControlLabel, Checkbox, TextField } from "@material-ui/core";
+import { FormControlLabel, Checkbox, TextField } from "@material-ui/core";
 import { RouteComponentProps } from "react-router-dom";
 
 import "./Login.scss";
+import { StatusSnackbar, StatusSnackbarType } from "../../components/StatusSnackbar";
 
 interface State {
   email: string;
@@ -48,8 +49,6 @@ export class Login extends React.Component<RouteComponentProps, State> {
   private _onClickForgotPassword = () => {
     this.setState(prevState => ({ showForgotPassword: !prevState.showForgotPassword }));
   }
-
-  private _onCloseSnackbar = () => this.setState({ error: undefined });
 
   public render() {
     return (
@@ -122,17 +121,14 @@ export class Login extends React.Component<RouteComponentProps, State> {
               : undefined}
           </form>
         </Paper>
-        <Snackbar
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-          open={!!this.state.error}
-          autoHideDuration={3000}
-          onClose={this._onCloseSnackbar}
-        >
-          <SnackbarContent
+        {this.state.error
+          ?
+          <StatusSnackbar
             message={this.state.error}
-            style={{ background: "red" }}
+            type={StatusSnackbarType.Error}
           />
-        </Snackbar>
+          : undefined
+        }
       </main>
     );
   }

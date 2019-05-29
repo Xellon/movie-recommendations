@@ -11,8 +11,8 @@ export enum StatusSnackbarType {
 }
 
 export interface Props {
-  message?: string;
-  type?: StatusSnackbarType;
+  message: string;
+  type: StatusSnackbarType;
 }
 
 export function StatusSnackbar(props: Props) {
