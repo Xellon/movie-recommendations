@@ -26,7 +26,7 @@ export function SuggestedMovie(props: Props) {
           secondary={props.possibleRating}
           style={{ maxWidth: 150 }}
         >
-          Possible Rating
+          Average Rating
         </ListItemText>
       </ListItem>
     </Paper>
@@ -46,7 +46,7 @@ export function PlaceholderSuggestedMovie() {
           secondary={"..."}
           style={{ maxWidth: 150 }}
         >
-          Possible Rating
+          Average Rating
         </ListItemText>
       </ListItem>
     </Paper>

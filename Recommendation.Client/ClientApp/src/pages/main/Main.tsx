@@ -20,7 +20,7 @@ const RequestRecommendationButton = withRouter(({ history }) => (
     color="primary"
     onClick={Utils.createOnNavigationClick(history, "/requestmovie")}
   >
-    Request a Movie
+    Request a Recommendation
   </Button>
 ));
 
