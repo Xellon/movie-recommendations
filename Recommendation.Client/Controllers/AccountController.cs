@@ -36,9 +36,10 @@ namespace Recommendation.Client.Controllers
         }
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> Logout(string email)
+        public async Task<IActionResult> Logout(string userId)
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await _userManager.FindByIdAsync(userId);
+
             await _userManager.UpdateSecurityStampAsync(user);
 
             return Ok();

@@ -75,7 +75,7 @@ function getCachedUser(): DB.SignedInUser | undefined {
 async function logOut() {
   const user = await getCachedUser();
   await Utils.fetchBackend(
-    `/api/account/logout?email${user.email}`, {
+    `/api/account/logout?userId=${user.id}`, {
       method: "POST",
     },
   );
