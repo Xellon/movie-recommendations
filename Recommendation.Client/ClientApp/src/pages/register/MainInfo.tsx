@@ -2,6 +2,8 @@ import * as React from "react";
 import { TextField } from "@material-ui/core";
 import { CustomEvent } from "../../common/CustomEvent";
 
+import "./MainInfo.scss";
+
 export interface MainInfoForm {
   email: string;
   password: string;
@@ -109,6 +111,7 @@ export class MainInfo extends React.Component<Props, State> {
       <>
         <div>
           <TextField
+            className="maininfo-input"
             label="Email"
             required
             margin="normal"
@@ -120,6 +123,7 @@ export class MainInfo extends React.Component<Props, State> {
         </div>
         <div>
           <TextField
+            className="maininfo-input"
             label="Password"
             required
             type="password"
@@ -132,6 +136,7 @@ export class MainInfo extends React.Component<Props, State> {
         </div>
         <div>
           <TextField
+            className="maininfo-input"
             label="Password"
             required
             type="password"

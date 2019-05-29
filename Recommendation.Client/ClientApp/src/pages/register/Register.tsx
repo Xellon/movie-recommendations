@@ -1,11 +1,12 @@
 import * as React from "react";
 import { MainInfo, MainInfoForm } from "./MainInfo";
-import { Button, Paper, Typography, Snackbar, SnackbarContent } from "@material-ui/core";
+import { Button, Paper, Typography } from "@material-ui/core";
 import { CustomEvent } from "../../common/CustomEvent";
 import { Utils } from "../../common/Utils";
 import { UserMovies } from "../../components/usermovies/Movies";
 import * as Model from "../../model/Model";
 import { RouteComponentProps } from "react-router-dom";
+import { StatusSnackbar, StatusSnackbarType } from "../../components/StatusSnackbar";
 
 export interface State {
   submitError?: string;
@@ -36,8 +37,6 @@ export class Register extends React.Component<RouteComponentProps, State> {
   private _retrieveMovieInfo = async (movies: Model.UserMovie[]) => {
     this._form.movies = movies;
   }
-
-  private _onCloseSnackbar = () => this.setState({ submitError: undefined });
 
   private _onClick = async () => {
     // Reset form
@@ -91,18 +90,15 @@ export class Register extends React.Component<RouteComponentProps, State> {
         >
           Submit
         </Button>
-        <Snackbar
-          open={!!this.state.submitError}
-          autoHideDuration={3000}
-          onClose={this._onCloseSnackbar}
-          message={this.state.submitError}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        >
-          <SnackbarContent
+
+        {this.state.submitError
+          ?
+          <StatusSnackbar
             message={this.state.submitError}
-            style={{ background: "red" }}
+            type={StatusSnackbarType.Error}
           />
-        </Snackbar>
+          : undefined
+        }
       </main>
     );
   }
