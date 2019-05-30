@@ -4,12 +4,30 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Python.Runtime;
+using System;
 
 namespace Recommendation.Service.Tests.Unit
 {
     [TestClass]
     public class PythonMethods
     {
+        double[,] RoundMatrix(double[,] matrix)
+        {
+            var xSize = matrix.GetLength(0);
+            var ySize = matrix.GetLength(1);
+            var newMatrix = new double[xSize, ySize];
+
+            for (int x = 0; x < xSize; x++)
+            {
+                for (int y = 0; y < ySize; y++)
+                {
+                    newMatrix[x, y] = Math.Round(matrix[x, y], 2);
+                }
+            }
+
+            return newMatrix;
+        }
+
         [ClassInitialize]
         public static void Init(TestContext testContext)
         {
@@ -36,6 +54,7 @@ namespace Recommendation.Service.Tests.Unit
             Assert.AreEqual("[[1.0,0.0],[0.0,1.0]]", serializedMatrix);
         }
 
+
         [TestMethod]
         public async Task VectorizeDocumentsTFIDF_ThreeSentences_VectorizesWordsCorrectly()
         {
@@ -48,10 +67,12 @@ namespace Recommendation.Service.Tests.Unit
 
             var matrix = await Service.PythonMethods.VectorizeDocumentsTFIDF(documents);
 
+            matrix = RoundMatrix(matrix);
+
             var stringifiedMatrix = JsonConvert.SerializeObject(matrix);
 
             Assert.AreEqual(
-                "[[0.53409337494358344,0.40619177814339469,0.40619177814339469,0.31544415103177975,0.0,0.53409337494358344],[0.0,0.0,0.54783215492743631,0.4254405389711991,0.72033344905498931,0.0],[0.0,0.78980692906609051,0.0,0.6133555370249717,0.0,0.0]]", 
+                "[[0.53,0.41,0.41,0.32,0.0,0.53],[0.0,0.0,0.55,0.43,0.72,0.0],[0.0,0.79,0.0,0.61,0.0,0.0]]", 
                 stringifiedMatrix);
         }
     }
