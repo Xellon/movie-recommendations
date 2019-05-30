@@ -48,6 +48,20 @@ const RegisterPageButton = withRouter(({ history }) => (
   </Button>
 ));
 
+const SignOutButton = withRouter(({ history }) => (
+  <Button
+    color="inherit"
+    style={styles.menuButton}
+    // tslint:disable-next-line:jsx-no-lambda
+    onClick={async () => {
+      await Authentication.logOut();
+      Utils.createOnNavigationClick(history, "/")();
+    }}
+  >
+    Sign Out
+  </Button>
+));
+
 interface Props {
   onNavigationClick: () => void;
 }
@@ -83,11 +97,6 @@ interface UserButtonProps {
 }
 
 function UserButtons(props: UserButtonProps) {
-  const onSignOut = () => {
-    Authentication.logOut();
-    location.reload();
-  };
-
   if (!props.user)
     return (
       <>
@@ -96,13 +105,5 @@ function UserButtons(props: UserButtonProps) {
       </>
     );
 
-  return (
-    <Button
-      color="inherit"
-      style={styles.menuButton}
-      onClick={onSignOut}
-    >
-      Sign Out
-    </Button>
-  );
+  return <SignOutButton />;
 }
